@@ -89,6 +89,11 @@
       gap: 14px;
     }
 
+    .session-card:hover {
+    border-color: #3b82f688; /* Un borde azul al pasar el ratón */
+    background: #0f172a;
+    }
+
     .session-header {
       border-bottom: 1px solid #111827;
       padding-bottom: 12px;
@@ -227,7 +232,9 @@
       // Crear una tarjeta por cada sesión
       for (const sesion of data.sesiones) {
         const card = document.createElement('div');
+        const card = document.createElement('a'); // Cambiamos de <div> a <a>
         card.className = 'session-card';
+        card.href = `detalle_sesion.html?id=${sesion.id}`;
 
         // Formatear horas
         const horaInicio = formatDateTime(sesion.started_at);

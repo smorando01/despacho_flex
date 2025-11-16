@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Detalle de Despacho - Flex & Districad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* --- Estilos Base (Copiados de index.html/historial.html) --- */
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #111827;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #020617;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 { margin: 0; font-size: 18px; }
+    header .subtitle { font-size: 12px; color: #9ca3af; margin-top: 3px; }
+    a { color: #60a5fa; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .tag {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #3b82f633;
+      border: 1px solid #3b82f655;
+      color: #bfdbfe;
+    }
+    .container {
+      padding: 16px 24px 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    
+    /* Métricas */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      padding: 12px 14px;
+      border: 1px solid #111827;
+    }
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+    .card-value { font-size: 22px; font-weight: 600; }
+    .card-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    /* Tabla de Scans */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 13px;
+    }
+    thead { background: #020617; }
+    th, td {
+      padding: 7px 8px;
+      border-bottom: 1px solid #111827;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      font-weight: 500;
+      font-size: 11px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      display: inline-block;
+    }
+    .pill-flex {
+      background: #22c55e33; color: #bbf7d0; border: 1px solid #22c55e55;
+    }
+    .pill-districad {
+      background: #3b82f633; color: #bfdbfe; border: 1px solid #3b82f655;
+    }
+    .pill-estado-ok {
+      background: #22c55e1a; color: #bbf7d0; border: 1px solid #22c55e44;
+    }
+    .pill-estado-inv {
+      background: #facc151a; color: #fef9c3; border: 1px solid #facc1544;
+    }
+    .row-invalid td { background: #451a03; }
+
+    /* Mensajes */
+    .loading, .error {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .error { color: #fda4af; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Detalle del Despacho</h1>
+    <div class="subtitle" id="session-subtitle">Cargando...</div>
+  </div>
+  <a href="historial.html" class="tag">&larr; Volver al Historial</a>
+</header>
+
+<div class="container">
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">Total paquetes</div>
+      <div class="card-value" id="metric-total">0</div>
+      <div class="card-sub">Registros en esta sesión</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Flex</div>
+      <div class="card-value" id="metric-flex">0</div>
+      <div class="card-sub">Códigos OK</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Etiqueta Districad</div>
+      <div class="card-value" id="metric-districad">0</div>
+      <div class="card-sub">Códigos OK</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Inválidos</div>
+      <div class="card-value" id="metric-invalid">0</div>
+      <div class="card-sub">Para ajuste / revisión</div>
+    </div>
+  </div>
+
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Código</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th>Input (Raw)</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        </tbody>
+    </table>
+  </div>
+  
+  <div id="message-container"></div>
+
+</div>
+
+<script>
+  // Formatear fechas SQL (YYYY-MM-DD HH:MM:SS) a algo legible
+  function formatTime(sqlDate) {
+    if (!sqlDate) return 'N/A';
+    try {
+      const d = new Date(sqlDate);
+      return d.toLocaleTimeString('es-UY', { hour12: false });
+    } catch (e) {
+      return sqlDate;
+    }
+  }
+
+  function formatDate(sqlDate) {
+    if (!sqlDate) return 'N/A';
+    try {
+      const d = new Date(sqlDate + 'T00:00:00-03:00'); // Forzar zona horaria
+      return d.toLocaleDateString('es-UY', { dateStyle: 'long' });
+    } catch (e) {
+      return sqlDate;
+    }
+  }
+
+  // Función principal
+  async function cargarDetalle() {
+    const subtitle = document.getElementById('session-subtitle');
+    const tbody = document.getElementById('table-body');
+    const msgContainer = document.getElementById('message-container');
+
+    // 1. Obtener el ID de la URL
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('id');
+
+    if (!sessionId) {
+      subtitle.textContent = 'Error';
+      msgContainer.innerHTML = `<div class="error">No se especificó un ID de sesión.</div>`;
+      return;
+    }
+    
+    msgContainer.innerHTML = `<div class="loading">Cargando datos de la sesión #${sessionId}...</div>`;
+
+    try {
+      // 2. Llamar a la nueva API
+      const resp = await fetch(`api/get_session_detail.php?id=${sessionId}`);
+      const data = await resp.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'Respuesta inválida de la API');
+      }
+
+      // 3. Poblar las Métricas (los cards)
+      const session = data.session;
+      document.getElementById('metric-total').textContent = session.total_scans || 0;
+      document.getElementById('metric-flex').textContent = session.flex_ok || 0;
+      document.getElementById('metric-districad').textContent = session.etiqueta_ok || 0;
+      document.getElementById('metric-invalid').textContent = session.invalidos || 0;
+      
+      const fechaFmt = formatDate(session.fecha);
+      subtitle.textContent = `Despacho #${session.numero_en_dia}  |  ${fechaFmt}`;
+
+      // 4. Poblar la tabla de Scans
+      const scans = data.scans;
+      tbody.innerHTML = ''; // Limpiar
+      
+      if (!scans || scans.length === 0) {
+        msgContainer.innerHTML = `<div class="loading">Esta sesión no tiene scans registrados.</div>`;
+        return;
+      }
+
+      for (const scan of scans) {
+        const tr = document.createElement('tr');
+        const estadoUi = scan.estado === 'INVALIDO' ? 'Inválido' : 'OK';
+        
+        if (scan.estado === 'INVALIDO') {
+          tr.classList.add('row-invalid');
+        }
+
+        const tipoPill = (scan.tipo === 'FLEX')
+          ? '<span class="pill pill-flex">Flex</span>'
+          : (scan.tipo === 'ETIQUETA'
+              ? '<span class="pill pill-districad">Etiqueta Districad</span>'
+              : '<span class="pill pill-estado-inv">Inválido</span>'
+            );
+        
+        const estadoPill = (scan.estado === 'OK')
+          ? '<span class="pill pill-estado-ok">OK</span>'
+          : '<span class="pill pill-estado-inv">Inválido</span>';
+
+        tr.innerHTML = `
+          <td>${formatTime(scan.scanned_at)}</td>
+          <td>${scan.codigo}</td>
+          <td>${tipoPill}</td>
+          <td>${estadoPill}</td>
+          <td>${scan.raw_input || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+      
+      msgContainer.innerHTML = ''; // Limpiar "Cargando..."
+
+    } catch (err) {
+      console.error(err);
+      msgContainer.innerHTML = `<div class="error">Error al cargar el detalle: ${err.message}</div>`;
+    }
+  }
+
+  window.addEventListener('load', cargarDetalle);
+</script>
+
+</body>
+</html>

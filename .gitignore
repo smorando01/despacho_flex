@@ -1,0 +1,6 @@
+# Ignorar el archivo de configuración con contraseñas
+api/config.php
+
+# Ignorar archivos del sistema operativo
+.DS_Store
+Thumbs.db

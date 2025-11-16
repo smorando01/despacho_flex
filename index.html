@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Despacho Flex & Districad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #111827;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #020617;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 { margin: 0; font-size: 18px; }
+    header .subtitle { font-size: 12px; color: #9ca3af; margin-top: 3px; }
+
+    .tag {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #22c55e1a;
+      border: 1px solid #22c55e55;
+      color: #bbf7d0;
+    }
+
+    .container {
+      padding: 16px 24px 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      padding: 12px 14px;
+      border: 1px solid #111827;
+    }
+
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .card-value { font-size: 22px; font-weight: 600; }
+    .card-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    .scan-box {
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid #111827;
+      background: #020617;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .scan-label { font-size: 13px; margin-right: 4px; }
+
+    .scan-input { flex: 1 1 200px; min-width: 200px; }
+
+    .scan-input input {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .scan-input input:focus { border-color: #4b5563; }
+
+    .pill-status {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 120px;
+      justify-content: center;
+    }
+
+    .pill-status.ok {
+      background: #22c55e1a;
+      border-color: #22c55e55;
+      color: #bbf7d0;
+    }
+
+    .pill-status.invalid {
+      background: #facc151a;
+      border-color: #facc1544;
+      color: #fef9c3;
+    }
+
+    .pill-status.dup {
+      background: #f973161a;
+      border-color: #f9731644;
+      color: #fed7aa;
+    }
+
+    .pill-status span {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+
+    .toolbar button,
+    .toolbar select {
+      background: #020617;
+      color: #e5e7eb;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .toolbar button:hover {
+      border-color: #4b5563;
+    }
+
+    .toolbar input {
+      background: #020617;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: #e5e7eb;
+      font-size: 12px;
+      min-width: 170px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    thead { background: #020617; }
+
+    th, td {
+      padding: 7px 8px;
+      border-bottom: 1px solid #111827;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      font-weight: 500;
+      font-size: 11px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      display: inline-block;
+    }
+
+    .pill-flex {
+      background: #22c55e33;
+      color: #bbf7d0;
+      border: 1px solid #22c55e55;
+    }
+
+    .pill-districad {
+      background: #3b82f633;
+      color: #bfdbfe;
+      border: 1px solid #3b82f655;
+    }
+
+    .pill-estado-ok {
+      background: #22c55e1a;
+      color: #bbf7d0;
+      border: 1px solid #22c55e44;
+    }
+
+    .pill-estado-inv {
+      background: #facc151a;
+      color: #fef9c3;
+      border: 1px solid #facc1544;
+    }
+
+    .row-ok td {}
+    .row-invalid td { background: #451a03; }
+
+    .hint { font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Despacho Flex &amp; Districad</h1>
+    <div class="subtitle">Panel conectado a base de datos</div>
+  </div>
+  <div class="tag">En línea</div>
+</header>
+
+<div class="container">
+
+  <!-- Métricas -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">Total paquetes</div>
+      <div class="card-value" id="metric-total">0</div>
+      <div class="card-sub">Registros en esta sesión</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Flex</div>
+      <div class="card-value" id="metric-flex">0</div>
+      <div class="card-sub">Códigos OK</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Etiqueta Districad</div>
+      <div class="card-value" id="metric-districad">0</div>
+      <div class="card-sub">Códigos OK</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Inválidos</div>
+      <div class="card-value" id="metric-invalid">0</div>
+      <div class="card-sub">Para ajuste / revisión</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Último estado</div>
+      <div class="card-value" id="metric-last-status">–</div>
+      <div class="card-sub" id="metric-last-code">Esperando primer escaneo</div>
+    </div>
+  </div>
+
+  <!-- Scan -->
+  <div class="scan-box">
+    <div class="scan-label">Escanear código:</div>
+
+    <div class="scan-input">
+      <input id="scan-input" type="text" autocomplete="off"
+             placeholder="Apuntá el lector aquí y escaneá..." />
+      <div class="hint">Enter o fin de lectura = registrar código</div>
+    </div>
+
+    <div id="scan-status-pill" class="pill-status">
+      <span>Listo</span>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span>Mostrar:</span>
+    <select id="filter-tipo">
+      <option value="ALL">Todos los tipos</option>
+      <option value="Flex">Solo Flex</option>
+      <option value="Etiqueta Districad">Solo Etiqueta Districad</option>
+      <option value="Invalido">Solo inválidos</option>
+    </select>
+
+    <span> | Buscar:</span>
+    <input id="search-input" type="text" placeholder="Buscar por código..." />
+
+    <button id="btn-clear">Limpiar sesión local</button>
+    <button id="btn-close">Cerrar despacho</button>
+  </div>
+
+  <!-- Tabla -->
+  <div style="overflow-x:auto; max-height: 60vh;">
+    <table>
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Código</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  // Claves para localStorage
+  const STORAGE_SCANS_KEY   = 'flex_districad_scans';
+  const STORAGE_METRICS_KEY = 'flex_districad_metrics';
+
+  // Estado local (solo para mostrar en pantalla)
+  const scans = [];
+
+  const scanInput       = document.getElementById('scan-input');
+  const statusPill      = document.getElementById('scan-status-pill');
+  const tbody           = document.getElementById('table-body');
+  const filterTipo      = document.getElementById('filter-tipo');
+  const searchInput     = document.getElementById('search-input');
+  const btnClear        = document.getElementById('btn-clear');
+  const btnClose        = document.getElementById('btn-close');
+
+  const metricTotal     = document.getElementById('metric-total');
+  const metricFlex      = document.getElementById('metric-flex');
+  const metricDistricad = document.getElementById('metric-districad');
+  const metricInvalid   = document.getElementById('metric-invalid');
+  const metricLastStatus= document.getElementById('metric-last-status');
+  const metricLastCode  = document.getElementById('metric-last-code');
+
+  function setStatusPill(estadoUi) {
+    statusPill.className = 'pill-status';
+
+    if (estadoUi === 'OK') {
+      statusPill.classList.add('ok');
+      statusPill.innerHTML = '<span>OK</span>';
+    } else if (estadoUi === 'CÓDIGO INVÁLIDO') {
+      statusPill.classList.add('invalid');
+      statusPill.innerHTML = '<span>Inválido</span>';
+    } else if (estadoUi === 'DUPLICADO') {
+      statusPill.classList.add('dup');
+      statusPill.innerHTML = '<span>Duplicado</span>';
+    } else {
+      statusPill.innerHTML = '<span>Listo</span>';
+    }
+  }
+
+  function actualizarMetricasDesdeAPI(metrics) {
+    if (!metrics) return;
+    metricTotal.textContent     = metrics.total       ?? 0;
+    metricFlex.textContent      = metrics.flex_ok     ?? 0;
+    metricDistricad.textContent = metrics.etiqueta_ok ?? 0;
+    metricInvalid.textContent   = metrics.invalidos   ?? 0;
+  }
+
+  function actualizarMetricasUltimo() {
+    if (scans.length === 0) {
+      metricLastStatus.textContent = '–';
+      metricLastCode.textContent   = 'Esperando primer escaneo';
+    } else {
+      const last = scans[scans.length - 1];
+      metricLastStatus.textContent = last.estado;
+      metricLastCode.textContent   = last.codigo;
+    }
+  }
+
+  function actualizarTabla() {
+    const filtro = filterTipo.value;
+    const search = searchInput.value.trim();
+
+    tbody.innerHTML = '';
+
+    const filtrados = scans.filter(s => {
+      if (filtro === 'Flex' && s.tipo !== 'Flex') return false;
+      if (filtro === 'Etiqueta Districad' && s.tipo !== 'Etiqueta Districad') return false;
+      if (filtro === 'Invalido' && s.estado !== 'CÓDIGO INVÁLIDO') return false;
+      if (search && !s.codigo.includes(search)) return false;
+      return true;
+    }).slice().reverse(); // últimos primero
+
+    for (const registro of filtrados) {
+      const tr = document.createElement('tr');
+      if (registro.estado === 'CÓDIGO INVÁLIDO') tr.classList.add('row-invalid');
+
+      const hora = new Date(registro.ts).toLocaleTimeString('es-UY', { hour12: false });
+
+      const tdHora   = document.createElement('td');
+      const tdCodigo = document.createElement('td');
+      const tdTipo   = document.createElement('td');
+      const tdEstado = document.createElement('td');
+
+      tdHora.textContent   = hora;
+      tdCodigo.textContent = registro.codigo;
+
+      // TIPO
+      const spanTipo = document.createElement('span');
+      spanTipo.classList.add('pill');
+      if (registro.estado === 'CÓDIGO INVÁLIDO') {
+        spanTipo.classList.add('pill-estado-inv');
+        spanTipo.textContent = 'Inválido';
+      } else {
+        spanTipo.classList.add(
+          registro.tipo === 'Flex' ? 'pill-flex' : 'pill-districad'
+        );
+        spanTipo.textContent = registro.tipo;
+      }
+      tdTipo.appendChild(spanTipo);
+
+      // ESTADO
+      const spanEstado = document.createElement('span');
+      spanEstado.classList.add('pill');
+      if (registro.estado === 'OK') {
+        spanEstado.classList.add('pill-estado-ok');
+      } else {
+        spanEstado.classList.add('pill-estado-inv');
+      }
+      spanEstado.textContent = registro.estado;
+      tdEstado.appendChild(spanEstado);
+
+      tr.appendChild(tdHora);
+      tr.appendChild(tdCodigo);
+      tr.appendChild(tdTipo);
+      tr.appendChild(tdEstado);
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  function guardarSesionEnLocalStorage() {
+    try {
+      localStorage.setItem(STORAGE_SCANS_KEY, JSON.stringify(scans));
+
+      const metrics = {
+        total       : Number(metricTotal.textContent)     || 0,
+        flex_ok     : Number(metricFlex.textContent)      || 0,
+        etiqueta_ok : Number(metricDistricad.textContent) || 0,
+        invalidos   : Number(metricInvalid.textContent)   || 0,
+      };
+      localStorage.setItem(STORAGE_METRICS_KEY, JSON.stringify(metrics));
+    } catch (e) {
+      console.error('Error guardando sesión en localStorage', e);
+    }
+  }
+
+  function cargarSesionDesdeLocalStorage() {
+    try {
+      const savedScans   = JSON.parse(localStorage.getItem(STORAGE_SCANS_KEY)   || '[]');
+      const savedMetrics = JSON.parse(localStorage.getItem(STORAGE_METRICS_KEY) || 'null');
+
+      if (Array.isArray(savedScans)) {
+        savedScans.forEach(s => scans.push(s));
+      }
+
+      if (savedMetrics) {
+        actualizarMetricasDesdeAPI(savedMetrics);
+      }
+
+      actualizarMetricasUltimo();
+      actualizarTabla();
+      if (scans.length === 0) {
+        setStatusPill(null);
+      }
+    } catch (e) {
+      console.error('Error cargando sesión desde localStorage', e);
+    }
+  }
+
+  // ---- MANEJO DE ESCANEO (todo via backend, también duplicados) ----
+
+  async function manejarScan(rawValue) {
+    const raw = String(rawValue).trim();
+    if (!raw) return;
+
+    try {
+      const resp = await fetch('api/scan.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw })
+      });
+
+      const data = await resp.json();
+
+      if (!data.success) {
+        setStatusPill('ERROR');
+        alert(data.message || 'Error procesando el código');
+        return;
+      }
+
+      const reg     = data.registro; // {codigo, tipo, estado, scanned_at,...}
+      const metrics = data.metrics;
+
+      // Actualizar pill según backend
+      setStatusPill(reg.estado);
+
+      // DUPLICADO: no lo agregamos a la tabla, pero sí mostramos en el cuadro de último estado
+      if (reg.estado === 'DUPLICADO') {
+        metricLastStatus.textContent = 'DUPLICADO';
+        metricLastCode.textContent   = reg.codigo;
+      } else {
+        // Nuevo registro (OK o CÓDIGO INVÁLIDO)
+        scans.push({
+          codigo : reg.codigo,
+          tipo   : reg.tipo,          // Flex / Etiqueta Districad / Inválido
+          estado : reg.estado,        // OK / CÓDIGO INVÁLIDO
+          ts     : new Date(reg.scanned_at).getTime()
+        });
+        actualizarMetricasUltimo();
+      }
+
+      actualizarMetricasDesdeAPI(metrics);
+      actualizarTabla();
+      guardarSesionEnLocalStorage();
+
+    } catch (err) {
+      console.error(err);
+      setStatusPill('ERROR');
+      alert('Error de red o del servidor');
+    }
+  }
+
+  // ---- Eventos ----
+
+  scanInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      manejarScan(scanInput.value);
+      scanInput.value = '';
+    }
+  });
+
+  filterTipo.addEventListener('change', actualizarTabla);
+  searchInput.addEventListener('input', actualizarTabla);
+
+  btnClear.addEventListener('click', () => {
+    if (!confirm('¿Limpiar la sesión local actual? Esto NO borra la base de datos.')) return;
+    scans.length = 0;
+    actualizarMetricasDesdeAPI({ total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 });
+    actualizarMetricasUltimo();
+    actualizarTabla();
+    setStatusPill(null);
+    localStorage.removeItem(STORAGE_SCANS_KEY);
+    localStorage.removeItem(STORAGE_METRICS_KEY);
+  });
+
+  // Cerrar despacho (marca la sesión como cerrada y envía mail)
+  btnClose.addEventListener('click', async () => {
+    if (!confirm('¿Confirmar cierre del despacho actual?')) return;
+
+    try {
+      const resp = await fetch('api/close_session.php', {
+        method: 'POST'
+      });
+      const data = await resp.json();
+
+      if (!data.success) {
+        alert(data.message || 'Error al cerrar el despacho');
+        return;
+      }
+
+      // Limpiar sesión local
+      scans.length = 0;
+      actualizarMetricasDesdeAPI({ total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 });
+      actualizarMetricasUltimo();
+      actualizarTabla();
+      setStatusPill(null);
+      localStorage.removeItem(STORAGE_SCANS_KEY);
+      localStorage.removeItem(STORAGE_METRICS_KEY);
+
+      const m = data.metrics || {};
+      alert(
+        `Despacho cerrado.\n\n` +
+        `Fecha: ${m.fecha || ''}\n` +
+        `Despacho #: ${m.numero_en_dia || ''}\n` +
+        `Paquetes: ${m.total || 0}\n` +
+        `Flex OK: ${m.flex_ok || 0} | Etiqueta OK: ${m.etiqueta_ok || 0} | Inválidos: ${m.invalidos || 0}`
+      );
+    } catch (e) {
+      console.error(e);
+      alert('Error de red al cerrar el despacho');
+    }
+  });
+
+  window.addEventListener('load', () => {
+    cargarSesionDesdeLocalStorage();
+    scanInput.focus();
+  });
+</script>
+
+</body>
+</html>

@@ -78,77 +78,6 @@
       gap: 16px;
     }
 
-    .filters-card {
-      margin-bottom: 24px;
-      padding: 16px 20px;
-      border-radius: 12px;
-      border: 1px solid #111827;
-      background: #020617;
-    }
-
-    .filters-card h3 {
-      margin: 0 0 12px;
-      font-size: 13px;
-      text-transform: uppercase;
-      color: #9ca3af;
-      letter-spacing: .08em;
-    }
-
-    .filters-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .filters-grid label {
-      display: block;
-      font-size: 12px;
-      color: #9ca3af;
-      margin-bottom: 4px;
-    }
-
-    .filters-grid input {
-      width: 100%;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid #1f2937;
-      background: #020617;
-      color: #e5e7eb;
-    }
-
-    .filters-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .filters-actions button {
-      border-radius: 999px;
-      border: 1px solid #1f2937;
-      background: #020617;
-      color: #e5e7eb;
-      padding: 6px 14px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .filters-actions button.apply {
-      border-color: #3b82f6bb;
-      color: #bfdbfe;
-    }
-
-    .filters-actions button:hover {
-      border-color: #4b5563;
-    }
-
-    #active-filters {
-      font-size: 12px;
-      color: #9ca3af;
-      margin-top: 8px;
-    }
-
     .pagination {
       display: flex;
       justify-content: center;
@@ -274,6 +203,10 @@
     <form id="filters-form">
       <div class="filters-grid">
         <div>
+          <label for="filter-search">Buscar (número de despacho o fecha)</label>
+          <input type="text" id="filter-search" placeholder="Ej: 12 o 2024-03-01" />
+        </div>
+        <div>
           <label for="filter-from">Desde la fecha</label>
           <input type="date" id="filter-from" />
         </div>
@@ -308,17 +241,11 @@
   const HISTORY_LIMIT = 12;
   let currentPage = 1;
   let totalPages = 1;
-  const filters = { from: '', to: '' };
 
   const btnPrev = document.getElementById('btn-prev');
   const btnNext = document.getElementById('btn-next');
   const pageInfo = document.getElementById('page-info');
   const paginationControls = document.getElementById('pagination-controls');
-  const filtersForm = document.getElementById('filters-form');
-  const filterFromInput = document.getElementById('filter-from');
-  const filterToInput = document.getElementById('filter-to');
-  const btnClearFilters = document.getElementById('btn-clear-filters');
-  const activeFiltersText = document.getElementById('active-filters');
 
   // Formatear fechas SQL (YYYY-MM-DD HH:MM:SS) a algo legible
   function formatDateTime(sqlDate) {
@@ -404,41 +331,13 @@
     paginationControls.style.display = totalPages <= 1 ? 'none' : 'flex';
   }
 
-  function buildHistoryQuery(page) {
-    const params = new URLSearchParams({ page, limit: HISTORY_LIMIT });
-    if (filters.from) params.set('from', filters.from);
-    if (filters.to) params.set('to', filters.to);
-    return params.toString();
-  }
-
-  function updateActiveFiltersSummary() {
-    const chips = [];
-    if (filters.from) {
-      chips.push(`Desde: ${filters.from}`);
-    }
-    if (filters.to) {
-      chips.push(`Hasta: ${filters.to}`);
-    }
-
-    activeFiltersText.textContent = chips.length
-      ? `Filtros aplicados: ${chips.join(' · ')}`
-      : 'Sin filtros aplicados.';
-  }
-
-  function resetToFirstPageAndReload() {
-    currentPage = 1;
-    updateActiveFiltersSummary();
-    cargarHistorial(1);
-  }
-
   async function cargarHistorial(page = 1) {
     const container = document.getElementById('history-container');
     container.innerHTML = `<div class="loading">Cargando historial...</div>`;
     paginationControls.style.display = 'flex';
 
     try {
-      const query = buildHistoryQuery(page);
-      const resp = await apiFetch(`api/get_history.php?${query}`);
+      const resp = await apiFetch(`api/get_history.php?page=${page}&limit=${HISTORY_LIMIT}`);
       const data = await resp.json();
 
       if (!data.success || !Array.isArray(data.sesiones)) {
@@ -451,10 +350,7 @@
       currentPage = Math.min(Math.max(1, requestedPage), totalPages);
 
       if (data.sesiones.length === 0) {
-        const emptyMsg = filters.from || filters.to
-          ? 'No se encontraron despachos con los filtros aplicados.'
-          : 'No se encontraron despachos cerrados en el historial.';
-        container.innerHTML = `<div class="empty">${emptyMsg}</div>`;
+        container.innerHTML = `<div class="empty">No se encontraron despachos cerrados en el historial.</div>`;
         actualizarControlesPaginacion();
         return;
       }
@@ -525,36 +421,8 @@
     }
   });
 
-  filtersForm.addEventListener('submit', (ev) => {
-    ev.preventDefault();
-    filters.from = filterFromInput.value;
-    filters.to = filterToInput.value;
-    resetToFirstPageAndReload();
-  });
-
-  filterFromInput.addEventListener('change', () => {
-    filters.from = filterFromInput.value;
-    resetToFirstPageAndReload();
-  });
-
-  filterToInput.addEventListener('change', () => {
-    filters.to = filterToInput.value;
-    resetToFirstPageAndReload();
-  });
-
-  btnClearFilters.addEventListener('click', () => {
-    filterFromInput.value = '';
-    filterToInput.value = '';
-    filters.from = '';
-    filters.to = '';
-    resetToFirstPageAndReload();
-  });
-
   // Iniciar la carga de datos
-  window.addEventListener('load', () => {
-    updateActiveFiltersSummary();
-    cargarHistorial(1);
-  });
+  window.addEventListener('load', () => cargarHistorial(1));
 </script>
 
 </body>

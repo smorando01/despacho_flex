@@ -24,35 +24,7 @@ try {
 
     $offset = ($page - 1) * $limit;
 
-    $conditions = ['s.closed_at IS NOT NULL'];
-    $params = [];
-
-    $fromRaw = isset($_GET['from']) ? trim((string)$_GET['from']) : '';
-    if ($fromRaw !== '') {
-        $fromDate = DateTime::createFromFormat('Y-m-d', $fromRaw);
-        if ($fromDate && $fromDate->format('Y-m-d') === $fromRaw) {
-            $conditions[] = 's.fecha >= :from_date';
-            $params[':from_date'] = $fromRaw;
-        }
-    }
-
-    $toRaw = isset($_GET['to']) ? trim((string)$_GET['to']) : '';
-    if ($toRaw !== '') {
-        $toDate = DateTime::createFromFormat('Y-m-d', $toRaw);
-        if ($toDate && $toDate->format('Y-m-d') === $toRaw) {
-            $conditions[] = 's.fecha <= :to_date';
-            $params[':to_date'] = $toRaw;
-        }
-    }
-
-    $whereSql = implode(' AND ', $conditions);
-
-    $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM sessions s WHERE $whereSql");
-    foreach ($params as $key => $value) {
-        $type = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
-        $totalStmt->bindValue($key, $value, $type);
-    }
-    $totalStmt->execute();
+    $totalStmt = $pdo->query("SELECT COUNT(*) FROM sessions WHERE closed_at IS NOT NULL");
     $totalRows = (int)$totalStmt->fetchColumn();
 
     // 1) Seleccionar sesiones cerradas paginadas
@@ -80,10 +52,6 @@ try {
         LIMIT :limit OFFSET :offset
     ");
 
-    foreach ($params as $key => $value) {
-        $type = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
-        $stmt->bindValue($key, $value, $type);
-    }
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();

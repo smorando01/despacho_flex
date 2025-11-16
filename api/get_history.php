@@ -44,7 +44,7 @@ try {
         LEFT JOIN
             scans sc ON s.id = sc.session_id
         WHERE
-            s.closed_at IS NOT NULL
+            $whereSql
         GROUP BY
             s.id
         ORDER BY

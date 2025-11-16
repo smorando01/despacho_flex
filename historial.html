@@ -198,6 +198,31 @@
   
   <h2 class="page-title">Historial de Despachos</h2>
 
+  <div class="filters-card">
+    <h3>Filtrar resultados</h3>
+    <form id="filters-form">
+      <div class="filters-grid">
+        <div>
+          <label for="filter-search">Buscar (número de despacho o fecha)</label>
+          <input type="text" id="filter-search" placeholder="Ej: 12 o 2024-03-01" />
+        </div>
+        <div>
+          <label for="filter-from">Desde la fecha</label>
+          <input type="date" id="filter-from" />
+        </div>
+        <div>
+          <label for="filter-to">Hasta la fecha</label>
+          <input type="date" id="filter-to" />
+        </div>
+      </div>
+      <div class="filters-actions">
+        <button type="submit" class="apply">Aplicar filtros</button>
+        <button type="button" id="btn-clear-filters">Limpiar</button>
+      </div>
+    </form>
+    <div id="active-filters">Sin filtros aplicados.</div>
+  </div>
+
   <div id="history-container" class="history-grid">
     <div class="loading">Cargando historial...</div>
   </div>

@@ -30,6 +30,12 @@
     header h1 { margin: 0; font-size: 18px; }
     header .subtitle { font-size: 12px; color: #9ca3af; margin-top: 3px; }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .tag {
       font-size: 11px;
       padding: 3px 10px;
@@ -37,6 +43,24 @@
       background: #22c55e1a;
       border: 1px solid #22c55e55;
       color: #bbf7d0;
+    }
+
+    .link-button {
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: #bfdbfe;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .link-button:hover {
+      border-color: #3b82f6aa;
+      text-decoration: none;
     }
 
     .container {
@@ -235,6 +259,11 @@
         align-items: flex-start;
         gap: 6px;
       }
+
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
     }
   </style>
 </head>
@@ -245,7 +274,10 @@
     <h1>Despacho Flex &amp; Districad</h1>
     <div class="subtitle">Panel conectado a base de datos</div>
   </div>
-  <div class="tag">En línea</div>
+  <div class="header-actions">
+    <div class="tag">En línea</div>
+    <a class="link-button" href="historial.html">Historial de despachos &rarr;</a>
+  </div>
 </header>
 
 <div class="container">

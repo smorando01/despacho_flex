@@ -1,4 +1,7 @@
 <?php
+if (!defined('API_SHARED_SECRET')) {
+    define('API_SHARED_SECRET', 'k7p9zX3qR8bVwY5a');
+}
 if (!function_exists('flex_auth_start_session')) {
     function flex_auth_start_session(): void
     {

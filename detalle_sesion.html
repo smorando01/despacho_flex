@@ -241,32 +241,50 @@
         return;
       }
 
+      const createPill = (text, classes) => {
+        const pill = document.createElement('span');
+        pill.className = `pill ${classes}`;
+        pill.textContent = text;
+        return pill;
+      };
+
       for (const scan of scans) {
         const tr = document.createElement('tr');
-        const estadoUi = scan.estado === 'INVALIDO' ? 'Inválido' : 'OK';
-        
+
         if (scan.estado === 'INVALIDO') {
           tr.classList.add('row-invalid');
         }
 
-        const tipoPill = (scan.tipo === 'FLEX')
-          ? '<span class="pill pill-flex">Flex</span>'
-          : (scan.tipo === 'ETIQUETA'
-              ? '<span class="pill pill-districad">Etiqueta Districad</span>'
-              : '<span class="pill pill-estado-inv">Inválido</span>'
-            );
-        
-        const estadoPill = (scan.estado === 'OK')
-          ? '<span class="pill pill-estado-ok">OK</span>'
-          : '<span class="pill pill-estado-inv">Inválido</span>';
+        const tdHora = document.createElement('td');
+        tdHora.textContent = formatTime(scan.scanned_at);
 
-        tr.innerHTML = `
-          <td>${formatTime(scan.scanned_at)}</td>
-          <td>${scan.codigo}</td>
-          <td>${tipoPill}</td>
-          <td>${estadoPill}</td>
-          <td>${scan.raw_input || ''}</td>
-        `;
+        const tdCodigo = document.createElement('td');
+        tdCodigo.textContent = scan.codigo;
+
+        const tdTipo = document.createElement('td');
+        if (scan.tipo === 'FLEX') {
+          tdTipo.appendChild(createPill('Flex', 'pill-flex'));
+        } else if (scan.tipo === 'ETIQUETA') {
+          tdTipo.appendChild(createPill('Etiqueta Districad', 'pill-districad'));
+        } else {
+          tdTipo.appendChild(createPill('Inválido', 'pill-estado-inv'));
+        }
+
+        const tdEstado = document.createElement('td');
+        if (scan.estado === 'OK') {
+          tdEstado.appendChild(createPill('OK', 'pill-estado-ok'));
+        } else {
+          tdEstado.appendChild(createPill('Inválido', 'pill-estado-inv'));
+        }
+
+        const tdRaw = document.createElement('td');
+        tdRaw.textContent = scan.raw_input || '';
+
+        tr.appendChild(tdHora);
+        tr.appendChild(tdCodigo);
+        tr.appendChild(tdTipo);
+        tr.appendChild(tdEstado);
+        tr.appendChild(tdRaw);
         tbody.appendChild(tr);
       }
       

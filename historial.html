@@ -231,7 +231,6 @@
 
       // Crear una tarjeta por cada sesión
       for (const sesion of data.sesiones) {
-        const card = document.createElement('div');
         const card = document.createElement('a'); // Cambiamos de <div> a <a>
         card.className = 'session-card';
         card.href = `detalle_sesion.html?id=${sesion.id}`;

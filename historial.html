@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Historial de Despachos - Flex & Districad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* --- Estilos Base (Copiados de index.html) --- */
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #111827;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #020617;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 { margin: 0; font-size: 18px; }
+    header .subtitle { font-size: 12px; color: #9ca3af; margin-top: 3px; }
+
+    .tag {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #22c55e1a;
+      border: 1px solid #22c55e55;
+      color: #bbf7d0;
+    }
+
+    .container {
+      padding: 16px 24px 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      padding: 12px 14px;
+      border: 1px solid #111827;
+    }
+
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .card-value { font-size: 22px; font-weight: 600; }
+    .card-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    /* --- Nuevos Estilos para el Historial --- */
+    
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    
+    .session-card {
+      /* Reutilizamos el estilo .card */
+      background: #020617;
+      border-radius: 12px;
+      padding: 16px 20px;
+      border: 1px solid #111827;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .session-header {
+      border-bottom: 1px solid #111827;
+      padding-bottom: 12px;
+    }
+    .session-header h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .session-header .date {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+    .session-header .times {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .session-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px 10px;
+    }
+
+    .metric-item {
+      padding: 6px 0;
+    }
+    .metric-title {
+      font-size: 11px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 2px;
+    }
+    .metric-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .metric-value.total {
+      color: #bfdbfe; /* Azul claro */
+    }
+    .metric-value.ok {
+      color: #bbf7d0; /* Verde claro */
+    }
+    .metric-value.invalid {
+      color: #fef9c3; /* Amarillo claro */
+    }
+
+    .loading, .empty {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Despacho Flex &amp; Districad</h1>
+    <div class="subtitle">Consulta de sesiones cerradas</div>
+  </div>
+  <a href="index.html" class="tag" style="background: #3b82f633; border-color: #3b82f655; color: #bfdbfe;">
+    Ir al Panel &rarr;
+  </a>
+</header>
+
+<div class="container">
+  
+  <h2 class="page-title">Historial de Despachos</h2>
+
+  <div id="history-container" class="history-grid">
+    <div class="loading">Cargando historial...</div>
+  </div>
+
+</div>
+
+<script>
+  // Formatear fechas SQL (YYYY-MM-DD HH:MM:SS) a algo legible
+  function formatDateTime(sqlDate) {
+    if (!sqlDate) return 'N/A';
+    try {
+      const d = new Date(sqlDate);
+      return d.toLocaleString('es-UY', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+        hour12: false
+      });
+    } catch (e) {
+      return sqlDate;
+    }
+  }
+
+  function formatDate(sqlDate) {
+    if (!sqlDate) return 'N/A';
+    try {
+      // Sumamos 1 día (hack) porque la fecha 'YYYY-MM-DD' la toma como UTC medianoche
+      const d = new Date(sqlDate + 'T00:00:00-03:00'); // Forzar zona horaria
+      return d.toLocaleDateString('es-UY', {
+        dateStyle: 'long'
+      });
+    } catch (e) {
+      return sqlDate;
+    }
+  }
+
+  async function cargarHistorial() {
+    const container = document.getElementById('history-container');
+
+    try {
+      const resp = await fetch('api/get_history.php');
+      const data = await resp.json();
+
+      if (!data.success || !Array.isArray(data.sesiones)) {
+        throw new Error(data.message || 'Respuesta inválida de la API');
+      }
+
+      if (data.sesiones.length === 0) {
+        container.innerHTML = `<div class="empty">No se encontraron despachos cerrados en el historial.</div>`;
+        return;
+      }
+
+      // Limpiar el "Cargando..."
+      container.innerHTML = '';
+
+      // Crear una tarjeta por cada sesión
+      for (const sesion of data.sesiones) {
+        const card = document.createElement('div');
+        card.className = 'session-card';
+
+        // Formatear horas
+        const horaInicio = formatDateTime(sesion.started_at);
+        const horaFin    = formatDateTime(sesion.closed_at);
+        const fecha      = formatDate(sesion.fecha);
+
+        card.innerHTML = `
+          <div class="session-header">
+            <h2>Despacho #${sesion.numero_en_dia}</h2>
+            <div class="date">${fecha}</div>
+            <div class="times">
+              ${horaInicio} &ndash; ${horaFin}
+            </div>
+          </div>
+
+          <div class="session-metrics">
+            <div class="metric-item">
+              <div class="metric-title">Total Paquetes</div>
+              <div class="metric-value total">${sesion.total_scans || 0}</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-title">Inválidos</div>
+              <div class="metric-value invalid">${sesion.invalidos || 0}</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-title">Flex OK</div>
+              <div class="metric-value ok">${sesion.flex_ok || 0}</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-title">Etiqueta OK</div>
+              <div class="metric-value ok">${sesion.etiqueta_ok || 0}</div>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      }
+
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `<div class="empty" style="color: #fda4af;">Error al cargar el historial: ${err.message}</div>`;
+    }
+  }
+
+  // Iniciar la carga de datos
+  window.addEventListener('load', cargarHistorial);
+</script>
+
+</body>
+</html>

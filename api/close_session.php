@@ -2,6 +2,10 @@
 // api/close_session.php
 header('Content-Type: application/json');
 
+require_once __DIR__ . '/auth.php';
+require_api_auth();
+require_csrf_token();
+
 require __DIR__ . '/config.php';
 date_default_timezone_set('America/Montevideo');
 
@@ -153,10 +157,12 @@ try {
         'mail_sent'     => $mailOk ? true : false,
         'message'       => $mailOk ? 'Despacho cerrado y mail enviado.' : 'Despacho cerrado, pero el mail no se pudo enviar.',
         'metrics'       => [
-            'total'       => $total,
-            'flex_ok'     => $flex_ok,
-            'etiqueta_ok' => $etiqueta_ok,
-            'invalidos'   => $invalidos,
+            'total'         => $total,
+            'flex_ok'       => $flex_ok,
+            'etiqueta_ok'   => $etiqueta_ok,
+            'invalidos'     => $invalidos,
+            'fecha'         => $fechaSesion,
+            'numero_en_dia' => $numero_en_dia,
         ],
         'numero_en_dia' => $numero_en_dia
     ]);

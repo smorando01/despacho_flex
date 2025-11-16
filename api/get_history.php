@@ -24,7 +24,46 @@ try {
 
     $offset = ($page - 1) * $limit;
 
-    $totalStmt = $pdo->query("SELECT COUNT(*) FROM sessions WHERE closed_at IS NOT NULL");
+    $whereClauses = ['s.closed_at IS NOT NULL'];
+    $params = [];
+
+    $search = isset($_GET['search']) ? trim((string)$_GET['search']) : '';
+    if ($search !== '') {
+        if (preg_match('/^\d+$/', $search)) {
+            $whereClauses[] = 's.numero_en_dia = :search_num';
+            $params[':search_num'] = (int)$search;
+        } else {
+            $whereClauses[] = 's.fecha LIKE :search_date';
+            $params[':search_date'] = '%' . $search . '%';
+        }
+    }
+
+    $fromDate = isset($_GET['from']) ? trim((string)$_GET['from']) : '';
+    if ($fromDate !== '') {
+        $fromDateTime = DateTime::createFromFormat('Y-m-d', $fromDate);
+        if ($fromDateTime !== false) {
+            $whereClauses[] = 's.fecha >= :from_date';
+            $params[':from_date'] = $fromDateTime->format('Y-m-d');
+        }
+    }
+
+    $toDate = isset($_GET['to']) ? trim((string)$_GET['to']) : '';
+    if ($toDate !== '') {
+        $toDateTime = DateTime::createFromFormat('Y-m-d', $toDate);
+        if ($toDateTime !== false) {
+            $whereClauses[] = 's.fecha <= :to_date';
+            $params[':to_date'] = $toDateTime->format('Y-m-d');
+        }
+    }
+
+    $whereSql = implode(' AND ', $whereClauses);
+
+    $totalSql = "SELECT COUNT(*) FROM sessions s WHERE $whereSql";
+    $totalStmt = $pdo->prepare($totalSql);
+    foreach ($params as $key => $value) {
+        $totalStmt->bindValue($key, $value);
+    }
+    $totalStmt->execute();
     $totalRows = (int)$totalStmt->fetchColumn();
 
     // 1) Seleccionar sesiones cerradas paginadas
@@ -52,6 +91,9 @@ try {
         LIMIT :limit OFFSET :offset
     ");
 
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value);
+    }
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();

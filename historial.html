@@ -246,6 +246,18 @@
   const btnNext = document.getElementById('btn-next');
   const pageInfo = document.getElementById('page-info');
   const paginationControls = document.getElementById('pagination-controls');
+  const filtersForm = document.getElementById('filters-form');
+  const filterSearchInput = document.getElementById('filter-search');
+  const filterFromInput = document.getElementById('filter-from');
+  const filterToInput = document.getElementById('filter-to');
+  const activeFiltersEl = document.getElementById('active-filters');
+  const btnClearFilters = document.getElementById('btn-clear-filters');
+
+  const filtersState = {
+    search: '',
+    from: '',
+    to: ''
+  };
 
   // Formatear fechas SQL (YYYY-MM-DD HH:MM:SS) a algo legible
   function formatDateTime(sqlDate) {
@@ -331,13 +343,37 @@
     paginationControls.style.display = totalPages <= 1 ? 'none' : 'flex';
   }
 
+  function buildHistoryQuery(page = 1) {
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('limit', HISTORY_LIMIT);
+
+    if (filtersState.search) params.set('search', filtersState.search);
+    if (filtersState.from) params.set('from', filtersState.from);
+    if (filtersState.to) params.set('to', filtersState.to);
+
+    return params.toString();
+  }
+
+  function updateActiveFilters() {
+    const active = [];
+    if (filtersState.search) active.push(`búsqueda: "${filtersState.search}"`);
+    if (filtersState.from) active.push(`desde ${filtersState.from}`);
+    if (filtersState.to) active.push(`hasta ${filtersState.to}`);
+
+    activeFiltersEl.textContent = active.length
+      ? `Filtros activos: ${active.join(' | ')}`
+      : 'Sin filtros aplicados.';
+  }
+
   async function cargarHistorial(page = 1) {
     const container = document.getElementById('history-container');
     container.innerHTML = `<div class="loading">Cargando historial...</div>`;
     paginationControls.style.display = 'flex';
 
     try {
-      const resp = await apiFetch(`api/get_history.php?page=${page}&limit=${HISTORY_LIMIT}`);
+      const query = buildHistoryQuery(page);
+      const resp = await apiFetch(`api/get_history.php?${query}`);
       const data = await resp.json();
 
       if (!data.success || !Array.isArray(data.sesiones)) {
@@ -421,8 +457,31 @@
     }
   });
 
+  filtersForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    filtersState.search = filterSearchInput.value.trim();
+    filtersState.from = filterFromInput.value;
+    filtersState.to = filterToInput.value;
+    updateActiveFilters();
+    cargarHistorial(1);
+  });
+
+  btnClearFilters.addEventListener('click', () => {
+    filterSearchInput.value = '';
+    filterFromInput.value = '';
+    filterToInput.value = '';
+    filtersState.search = '';
+    filtersState.from = '';
+    filtersState.to = '';
+    updateActiveFilters();
+    cargarHistorial(1);
+  });
+
   // Iniciar la carga de datos
-  window.addEventListener('load', () => cargarHistorial(1));
+  window.addEventListener('load', () => {
+    updateActiveFilters();
+    cargarHistorial(1);
+  });
 </script>
 
 </body>

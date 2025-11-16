@@ -2,6 +2,9 @@
 // api/get_session_detail.php
 header('Content-Type: application/json');
 
+require_once __DIR__ . '/auth.php';
+require_api_auth();
+
 require __DIR__ . '/config.php';
 date_default_timezone_set('America/Montevideo');
 

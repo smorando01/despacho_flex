@@ -6,8 +6,21 @@ require __DIR__ . '/config.php';
 date_default_timezone_set('America/Montevideo');
 
 try {
-    $input = json_decode(file_get_contents('php://input'), true);
-    $raw   = isset($input['raw']) ? trim($input['raw']) : '';
+    $body  = file_get_contents('php://input');
+    $input = json_decode($body, true);
+
+    if (!is_array($input)) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'JSON inválido'
+        ]);
+        exit;
+    }
+
+    $raw = isset($input['raw']) && is_string($input['raw'])
+        ? trim($input['raw'])
+        : '';
 
     if ($raw === '') {
         echo json_encode([
@@ -25,38 +38,51 @@ try {
     $hoy     = date('Y-m-d');
     $courier = 'FLEX';
 
-    // Sesión abierta de hoy para FLEX
-    $stmt = $pdo->prepare("
-        SELECT id, numero_en_dia
-        FROM sessions
-        WHERE fecha = ? AND courier = ? AND closed_at IS NULL
-        ORDER BY id DESC
-        LIMIT 1
-    ");
-    $stmt->execute([$hoy, $courier]);
-    $session = $stmt->fetch(PDO::FETCH_ASSOC);
+    $session_id    = null;
+    $numero_en_dia = null;
 
-    if ($session) {
-        $session_id    = (int)$session['id'];
-        $numero_en_dia = (int)$session['numero_en_dia'];
-    } else {
-        // calcular número de despacho del día
+    $pdo->beginTransaction();
+    try {
+        // Sesión abierta de hoy para FLEX
         $stmt = $pdo->prepare("
-            SELECT COALESCE(MAX(numero_en_dia), 0) AS max_n
+            SELECT id, numero_en_dia
             FROM sessions
-            WHERE fecha = ? AND courier = ?
+            WHERE fecha = ? AND courier = ? AND closed_at IS NULL
+            ORDER BY id DESC
+            LIMIT 1
+            FOR UPDATE
         ");
         $stmt->execute([$hoy, $courier]);
-        $row           = $stmt->fetch(PDO::FETCH_ASSOC);
-        $numero_en_dia = ((int)$row['max_n']) + 1;
+        $session = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $stmt = $pdo->prepare("
-            INSERT INTO sessions (fecha, started_at, courier, numero_en_dia)
-            VALUES (?, NOW(), ?, ?)
-        ");
-        $stmt->execute([$hoy, $courier, $numero_en_dia]);
+        if ($session) {
+            $session_id    = (int)$session['id'];
+            $numero_en_dia = (int)$session['numero_en_dia'];
+        } else {
+            // calcular número de despacho del día
+            $stmt = $pdo->prepare("
+                SELECT COALESCE(MAX(numero_en_dia), 0) AS max_n
+                FROM sessions
+                WHERE fecha = ? AND courier = ?
+                FOR UPDATE
+            ");
+            $stmt->execute([$hoy, $courier]);
+            $row           = $stmt->fetch(PDO::FETCH_ASSOC);
+            $numero_en_dia = ((int)$row['max_n']) + 1;
 
-        $session_id = (int)$pdo->lastInsertId();
+            $stmt = $pdo->prepare("
+                INSERT INTO sessions (fecha, started_at, courier, numero_en_dia)
+                VALUES (?, NOW(), ?, ?)
+            ");
+            $stmt->execute([$hoy, $courier, $numero_en_dia]);
+
+            $session_id = (int)$pdo->lastInsertId();
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
     }
 
     // ------------------------------------------------------------------

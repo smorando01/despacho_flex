@@ -2,14 +2,32 @@
 // api/get_history.php
 header('Content-Type: application/json');
 
+require_once __DIR__ . '/auth.php';
+require_api_auth();
+
 require __DIR__ . '/config.php';
 date_default_timezone_set('America/Montevideo');
 
 try {
     $pdo = get_pdo();
 
-    // 1) Seleccionar todas las sesiones CERRADAS
-    // Traemos también métricas calculadas para no tener que procesar los scans
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+    if ($limit < 1) {
+        $limit = 1;
+    }
+    $limit = min($limit, 100);
+
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    if ($page < 1) {
+        $page = 1;
+    }
+
+    $offset = ($page - 1) * $limit;
+
+    $totalStmt = $pdo->query("SELECT COUNT(*) FROM sessions WHERE closed_at IS NOT NULL");
+    $totalRows = (int)$totalStmt->fetchColumn();
+
+    // 1) Seleccionar sesiones cerradas paginadas
     $stmt = $pdo->prepare("
         SELECT
             s.id,
@@ -31,14 +49,23 @@ try {
             s.id
         ORDER BY
             s.fecha DESC, s.numero_en_dia DESC
+        LIMIT :limit OFFSET :offset
     ");
-    
+
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $sesiones = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
         'success' => true,
-        'sesiones' => $sesiones
+        'sesiones' => $sesiones,
+        'pagination' => [
+            'page'       => $page,
+            'limit'      => $limit,
+            'total'      => $totalRows,
+            'totalPages' => max(1, $limit > 0 ? (int)ceil($totalRows / $limit) : 1),
+        ]
     ]);
 
 } catch (Throwable $e) {

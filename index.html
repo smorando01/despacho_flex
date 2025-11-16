@@ -336,9 +336,12 @@
   // Claves para localStorage
   const STORAGE_SCANS_KEY   = 'flex_districad_scans';
   const STORAGE_METRICS_KEY = 'flex_districad_metrics';
+  const STORAGE_API_KEY     = 'flex_districad_api_key';
 
   // Estado local (solo para mostrar en pantalla)
   const scans = [];
+  let apiKey    = localStorage.getItem(STORAGE_API_KEY) || '';
+  let csrfToken = '';
 
   const scanInput       = document.getElementById('scan-input');
   const statusPill      = document.getElementById('scan-status-pill');
@@ -354,6 +357,75 @@
   const metricInvalid   = document.getElementById('metric-invalid');
   const metricLastStatus= document.getElementById('metric-last-status');
   const metricLastCode  = document.getElementById('metric-last-code');
+
+  function clearStoredApiKey() {
+    apiKey = '';
+    localStorage.removeItem(STORAGE_API_KEY);
+  }
+
+  async function ensureApiKey() {
+    apiKey = (apiKey || '').trim();
+
+    while (!apiKey) {
+      const input = window.prompt('Ingresá el token API proporcionado por sistemas:') || '';
+      apiKey = input.trim();
+      if (!apiKey) {
+        const retry = window.confirm('Se necesita un token API para continuar. ¿Intentar nuevamente?');
+        if (!retry) {
+          break;
+        }
+      }
+    }
+
+    if (apiKey) {
+      localStorage.setItem(STORAGE_API_KEY, apiKey);
+    }
+
+    return apiKey;
+  }
+
+  async function apiFetch(url, options = {}, extra = {}) {
+    await ensureApiKey();
+
+    if (!apiKey) {
+      throw new Error('No se ingresó un token API. Recargá la página e intentá nuevamente.');
+    }
+
+    const opts = { credentials: 'same-origin', ...options };
+    const headers = new Headers(opts.headers || {});
+
+    if (opts.body && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    headers.set('X-Api-Key', apiKey);
+
+    if (extra.requireCsrf) {
+      if (!csrfToken) {
+        throw new Error('El token CSRF no está inicializado. Recargá el panel para sincronizar nuevamente.');
+      }
+      headers.set('X-CSRF-Token', csrfToken);
+    }
+
+    opts.headers = headers;
+
+    const resp = await fetch(url, opts);
+
+    if (resp.status === 401) {
+      clearStoredApiKey();
+      throw new Error('Token API inválido o expirado. Ingresá uno nuevo y reintentá.');
+    }
+
+    if (resp.status === 403 && extra.requireCsrf) {
+      throw new Error('Token CSRF inválido. Recargá la página para obtener uno nuevo.');
+    }
+
+    return resp;
+  }
+
+  function metricasVacias() {
+    return { total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 };
+  }
 
   function setStatusPill(estadoUi) {
     statusPill.className = 'pill-status';
@@ -486,9 +558,69 @@
       actualizarTabla();
       if (scans.length === 0) {
         setStatusPill(null);
+      } else {
+        setStatusPill(scans[scans.length - 1].estado);
       }
     } catch (e) {
       console.error('Error cargando sesión desde localStorage', e);
+    }
+  }
+
+  async function sincronizarSesionConServidor() {
+    try {
+      const resp = await apiFetch('api/current_session.php');
+      const data = await resp.json();
+
+      if (!data.success) {
+        throw new Error(data.message || 'No se pudo sincronizar con el servidor.');
+      }
+
+      if (data.csrf_token) {
+        csrfToken = data.csrf_token;
+      }
+
+      if (!data.session) {
+        scans.length = 0;
+        actualizarMetricasDesdeAPI(metricasVacias());
+        actualizarMetricasUltimo();
+        actualizarTabla();
+        setStatusPill(null);
+        guardarSesionEnLocalStorage();
+        return;
+      }
+
+      scans.length = 0;
+      if (Array.isArray(data.scans)) {
+        data.scans.forEach((scan) => {
+          scans.push({
+            codigo: scan.codigo,
+            tipo: scan.tipo,
+            estado: scan.estado,
+            ts: scan.ts || (scan.scanned_at ? new Date(scan.scanned_at).getTime() : Date.now()),
+          });
+        });
+      }
+
+      actualizarMetricasDesdeAPI(data.metrics || metricasVacias());
+      actualizarMetricasUltimo();
+      actualizarTabla();
+
+      if (data.last_scan) {
+        metricLastStatus.textContent = data.last_scan.estado;
+        metricLastCode.textContent   = data.last_scan.codigo;
+        setStatusPill(data.last_scan.estado);
+      } else if (scans.length === 0) {
+        setStatusPill(null);
+      } else {
+        setStatusPill(scans[scans.length - 1].estado);
+      }
+
+      guardarSesionEnLocalStorage();
+    } catch (err) {
+      console.error('Error al sincronizar con el backend', err);
+      if (!csrfToken) {
+        alert(err.message || 'No se pudo sincronizar con el backend. Verificá el token API.');
+      }
     }
   }
 
@@ -499,11 +631,10 @@
     if (!raw) return;
 
     try {
-      const resp = await fetch('api/scan.php', {
+      const resp = await apiFetch('api/scan.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ raw })
-      });
+      }, { requireCsrf: true });
 
       const data = await resp.json();
 
@@ -541,7 +672,7 @@
     } catch (err) {
       console.error(err);
       setStatusPill('ERROR');
-      alert('Error de red o del servidor');
+      alert(err.message || 'Error de red o del servidor');
     }
   }
 
@@ -573,9 +704,9 @@
     if (!confirm('¿Confirmar cierre del despacho actual?')) return;
 
     try {
-      const resp = await fetch('api/close_session.php', {
+      const resp = await apiFetch('api/close_session.php', {
         method: 'POST'
-      });
+      }, { requireCsrf: true });
       const data = await resp.json();
 
       if (!data.success) {
@@ -593,22 +724,27 @@
       localStorage.removeItem(STORAGE_METRICS_KEY);
 
       const m = data.metrics || {};
+      const fechaResumen  = m.fecha || '';
+      const numeroResumen = m.numero_en_dia || data.numero_en_dia || '';
       alert(
         `Despacho cerrado.\n\n` +
-        `Fecha: ${m.fecha || ''}\n` +
-        `Despacho #: ${m.numero_en_dia || ''}\n` +
+        `Fecha: ${fechaResumen}\n` +
+        `Despacho #: ${numeroResumen}\n` +
         `Paquetes: ${m.total || 0}\n` +
         `Flex OK: ${m.flex_ok || 0} | Etiqueta OK: ${m.etiqueta_ok || 0} | Inválidos: ${m.invalidos || 0}`
       );
+      await sincronizarSesionConServidor();
     } catch (e) {
       console.error(e);
-      alert('Error de red al cerrar el despacho');
+      alert(e.message || 'Error de red al cerrar el despacho');
     }
   });
 
   window.addEventListener('load', () => {
     cargarSesionDesdeLocalStorage();
-    scanInput.focus();
+    sincronizarSesionConServidor().finally(() => {
+      scanInput.focus();
+    });
   });
 </script>
 

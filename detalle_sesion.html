@@ -174,6 +174,57 @@
 </div>
 
 <script>
+  const STORAGE_API_KEY = 'flex_districad_api_key';
+  let apiKey = localStorage.getItem(STORAGE_API_KEY) || '';
+
+  function clearStoredApiKey() {
+    apiKey = '';
+    localStorage.removeItem(STORAGE_API_KEY);
+  }
+
+  async function ensureApiKey() {
+    apiKey = (apiKey || '').trim();
+
+    while (!apiKey) {
+      const input = window.prompt('Ingresá el token API proporcionado por sistemas:') || '';
+      apiKey = input.trim();
+      if (!apiKey) {
+        const retry = window.confirm('Se necesita un token API para continuar. ¿Intentar nuevamente?');
+        if (!retry) {
+          break;
+        }
+      }
+    }
+
+    if (apiKey) {
+      localStorage.setItem(STORAGE_API_KEY, apiKey);
+    }
+
+    return apiKey;
+  }
+
+  async function apiFetch(url, options = {}) {
+    await ensureApiKey();
+
+    if (!apiKey) {
+      throw new Error('No se ingresó un token API. Recargá la página e intentá nuevamente.');
+    }
+
+    const opts = { credentials: 'same-origin', ...options };
+    const headers = new Headers(opts.headers || {});
+    headers.set('X-Api-Key', apiKey);
+    opts.headers = headers;
+
+    const resp = await fetch(url, opts);
+
+    if (resp.status === 401) {
+      clearStoredApiKey();
+      throw new Error('Token API inválido o expirado. Ingresá uno nuevo y reintentá.');
+    }
+
+    return resp;
+  }
+
   // Formatear fechas SQL (YYYY-MM-DD HH:MM:SS) a algo legible
   function formatTime(sqlDate) {
     if (!sqlDate) return 'N/A';
@@ -215,7 +266,7 @@
 
     try {
       // 2. Llamar a la nueva API
-      const resp = await fetch(`api/get_session_detail.php?id=${sessionId}`);
+      const resp = await apiFetch(`api/get_session_detail.php?id=${sessionId}`);
       const data = await resp.json();
 
       if (!data.success) {
@@ -241,32 +292,50 @@
         return;
       }
 
+      const createPill = (text, classes) => {
+        const pill = document.createElement('span');
+        pill.className = `pill ${classes}`;
+        pill.textContent = text;
+        return pill;
+      };
+
       for (const scan of scans) {
         const tr = document.createElement('tr');
-        const estadoUi = scan.estado === 'INVALIDO' ? 'Inválido' : 'OK';
-        
+
         if (scan.estado === 'INVALIDO') {
           tr.classList.add('row-invalid');
         }
 
-        const tipoPill = (scan.tipo === 'FLEX')
-          ? '<span class="pill pill-flex">Flex</span>'
-          : (scan.tipo === 'ETIQUETA'
-              ? '<span class="pill pill-districad">Etiqueta Districad</span>'
-              : '<span class="pill pill-estado-inv">Inválido</span>'
-            );
-        
-        const estadoPill = (scan.estado === 'OK')
-          ? '<span class="pill pill-estado-ok">OK</span>'
-          : '<span class="pill pill-estado-inv">Inválido</span>';
+        const tdHora = document.createElement('td');
+        tdHora.textContent = formatTime(scan.scanned_at);
 
-        tr.innerHTML = `
-          <td>${formatTime(scan.scanned_at)}</td>
-          <td>${scan.codigo}</td>
-          <td>${tipoPill}</td>
-          <td>${estadoPill}</td>
-          <td>${scan.raw_input || ''}</td>
-        `;
+        const tdCodigo = document.createElement('td');
+        tdCodigo.textContent = scan.codigo;
+
+        const tdTipo = document.createElement('td');
+        if (scan.tipo === 'FLEX') {
+          tdTipo.appendChild(createPill('Flex', 'pill-flex'));
+        } else if (scan.tipo === 'ETIQUETA') {
+          tdTipo.appendChild(createPill('Etiqueta Districad', 'pill-districad'));
+        } else {
+          tdTipo.appendChild(createPill('Inválido', 'pill-estado-inv'));
+        }
+
+        const tdEstado = document.createElement('td');
+        if (scan.estado === 'OK') {
+          tdEstado.appendChild(createPill('OK', 'pill-estado-ok'));
+        } else {
+          tdEstado.appendChild(createPill('Inválido', 'pill-estado-inv'));
+        }
+
+        const tdRaw = document.createElement('td');
+        tdRaw.textContent = scan.raw_input || '';
+
+        tr.appendChild(tdHora);
+        tr.appendChild(tdCodigo);
+        tr.appendChild(tdTipo);
+        tr.appendChild(tdEstado);
+        tr.appendChild(tdRaw);
         tbody.appendChild(tr);
       }
       

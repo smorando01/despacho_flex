@@ -77,6 +77,29 @@
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 16px;
     }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+      font-size: 13px;
+    }
+
+    .pagination button {
+      background: #020617;
+      color: #e5e7eb;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 6px 14px;
+      cursor: pointer;
+    }
+
+    .pagination button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
     
     .session-card {
       /* Reutilizamos el estilo .card */
@@ -179,9 +202,26 @@
     <div class="loading">Cargando historial...</div>
   </div>
 
+  <div id="pagination-controls" class="pagination">
+    <button id="btn-prev" disabled>&larr; Anterior</button>
+    <span id="page-info">Página 1</span>
+    <button id="btn-next" disabled>Siguiente &rarr;</button>
+  </div>
+
 </div>
 
 <script>
+  const STORAGE_API_KEY = 'flex_districad_api_key';
+  let apiKey = localStorage.getItem(STORAGE_API_KEY) || '';
+  const HISTORY_LIMIT = 12;
+  let currentPage = 1;
+  let totalPages = 1;
+
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  const pageInfo = document.getElementById('page-info');
+  const paginationControls = document.getElementById('pagination-controls');
+
   // Formatear fechas SQL (YYYY-MM-DD HH:MM:SS) a algo legible
   function formatDateTime(sqlDate) {
     if (!sqlDate) return 'N/A';
@@ -210,19 +250,83 @@
     }
   }
 
-  async function cargarHistorial() {
+  function clearStoredApiKey() {
+    apiKey = '';
+    localStorage.removeItem(STORAGE_API_KEY);
+  }
+
+  async function ensureApiKey() {
+    apiKey = (apiKey || '').trim();
+
+    while (!apiKey) {
+      const input = window.prompt('Ingresá el token API proporcionado por sistemas:') || '';
+      apiKey = input.trim();
+      if (!apiKey) {
+        const retry = window.confirm('Se necesita un token API para continuar. ¿Intentar nuevamente?');
+        if (!retry) {
+          break;
+        }
+      }
+    }
+
+    if (apiKey) {
+      localStorage.setItem(STORAGE_API_KEY, apiKey);
+    }
+
+    return apiKey;
+  }
+
+  async function apiFetch(url, options = {}) {
+    await ensureApiKey();
+
+    if (!apiKey) {
+      throw new Error('No se ingresó un token API. Recargá la página e intentá nuevamente.');
+    }
+
+    const opts = { credentials: 'same-origin', ...options };
+    const headers = new Headers(opts.headers || {});
+    headers.set('X-Api-Key', apiKey);
+    opts.headers = headers;
+
+    const resp = await fetch(url, opts);
+
+    if (resp.status === 401) {
+      clearStoredApiKey();
+      throw new Error('Token API inválido o expirado. Ingresá uno nuevo y reintentá.');
+    }
+
+    return resp;
+  }
+
+  function actualizarControlesPaginacion() {
+    const visiblePages = Math.max(1, totalPages);
+    pageInfo.textContent = `Página ${Math.min(currentPage, visiblePages)} de ${visiblePages}`;
+    btnPrev.disabled = currentPage <= 1;
+    btnNext.disabled = currentPage >= totalPages;
+    paginationControls.style.display = totalPages <= 1 ? 'none' : 'flex';
+  }
+
+  async function cargarHistorial(page = 1) {
     const container = document.getElementById('history-container');
+    container.innerHTML = `<div class="loading">Cargando historial...</div>`;
+    paginationControls.style.display = 'flex';
 
     try {
-      const resp = await fetch('api/get_history.php');
+      const resp = await apiFetch(`api/get_history.php?page=${page}&limit=${HISTORY_LIMIT}`);
       const data = await resp.json();
 
       if (!data.success || !Array.isArray(data.sesiones)) {
         throw new Error(data.message || 'Respuesta inválida de la API');
       }
 
+      const pagination = data.pagination || {};
+      totalPages  = Math.max(1, pagination.totalPages || 1);
+      const requestedPage = pagination.page || page;
+      currentPage = Math.min(Math.max(1, requestedPage), totalPages);
+
       if (data.sesiones.length === 0) {
         container.innerHTML = `<div class="empty">No se encontraron despachos cerrados en el historial.</div>`;
+        actualizarControlesPaginacion();
         return;
       }
 
@@ -271,14 +375,29 @@
         container.appendChild(card);
       }
 
+      actualizarControlesPaginacion();
+
     } catch (err) {
       console.error(err);
       container.innerHTML = `<div class="empty" style="color: #fda4af;">Error al cargar el historial: ${err.message}</div>`;
+      paginationControls.style.display = 'none';
     }
   }
 
+  btnPrev.addEventListener('click', () => {
+    if (currentPage > 1) {
+      cargarHistorial(currentPage - 1);
+    }
+  });
+
+  btnNext.addEventListener('click', () => {
+    if (currentPage < totalPages) {
+      cargarHistorial(currentPage + 1);
+    }
+  });
+
   // Iniciar la carga de datos
-  window.addEventListener('load', cargarHistorial);
+  window.addEventListener('load', () => cargarHistorial(1));
 </script>
 
 </body>

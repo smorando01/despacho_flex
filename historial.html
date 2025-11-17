@@ -349,20 +349,6 @@
     to: ''
   };
 
-  function getTodayInputValue() {
-    const now = new Date();
-    const offset = now.getTimezoneOffset() * 60000;
-    return new Date(now.getTime() - offset).toISOString().split('T')[0];
-  }
-
-  function seedDefaultDateRange() {
-    const today = getTodayInputValue();
-    filtersState.from = today;
-    filtersState.to = today;
-    filterFromInput.value = today;
-    filterToInput.value = today;
-  }
-
   // Formatear fechas SQL (YYYY-MM-DD HH:MM:SS) a algo legible
   function formatDateTime(sqlDate) {
     if (!sqlDate) return 'N/A';
@@ -585,7 +571,6 @@
 
   // Iniciar la carga de datos
   window.addEventListener('load', () => {
-    seedDefaultDateRange();
     updateActiveFilters();
     cargarHistorial(1);
   });

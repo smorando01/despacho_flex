@@ -72,10 +72,13 @@
       margin-bottom: 20px;
     }
 
-    .history-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
+    .history-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .pagination {
@@ -101,69 +104,156 @@
       cursor: not-allowed;
     }
     
-    .session-card {
-      /* Reutilizamos el estilo .card */
+    .history-row {
       background: #020617;
-      border-radius: 12px;
-      padding: 16px 20px;
       border: 1px solid #111827;
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+
+    .history-row:hover {
+      border-color: #3b82f688;
+    }
+
+    .history-row-link {
       display: flex;
-      flex-direction: column;
-      gap: 14px;
+      gap: 24px;
+      padding: 16px 20px;
+      color: inherit;
+      text-decoration: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
     }
 
-    .session-card:hover {
-    border-color: #3b82f688; /* Un borde azul al pasar el ratón */
-    background: #0f172a;
+    .history-row-link:hover {
+      background: #0f172a;
     }
 
-    .session-header {
-      border-bottom: 1px solid #111827;
-      padding-bottom: 12px;
+    .history-row-main {
+      flex: 1;
+      min-width: 220px;
     }
-    .session-header h2 {
+
+    .history-row-title {
       margin: 0;
       font-size: 16px;
+      font-weight: 600;
     }
-    .session-header .date {
+
+    .history-row-date {
       font-size: 13px;
       color: #9ca3af;
       margin-top: 2px;
     }
-    .session-header .times {
+
+    .history-row-times {
       font-size: 12px;
       color: #6b7280;
       margin-top: 4px;
     }
 
-    .session-metrics {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px 10px;
+    .history-row-metrics {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      min-width: 260px;
     }
 
     .metric-item {
-      padding: 6px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100px;
     }
+
     .metric-title {
       font-size: 11px;
       color: #9ca3af;
       text-transform: uppercase;
       letter-spacing: .08em;
-      margin-bottom: 2px;
     }
+
     .metric-value {
       font-size: 18px;
       font-weight: 600;
     }
-    .metric-value.total {
-      color: #bfdbfe; /* Azul claro */
+
+    .metric-value.total { color: #bfdbfe; }
+    .metric-value.ok { color: #bbf7d0; }
+    .metric-value.invalid { color: #fef9c3; }
+
+    .filters-card {
+      margin-bottom: 24px;
+      border: 1px solid #111827;
+      border-radius: 12px;
+      padding: 18px 20px;
+      background: #030712;
     }
-    .metric-value.ok {
-      color: #bbf7d0; /* Verde claro */
+
+    .filters-card h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #9ca3af;
     }
-    .metric-value.invalid {
-      color: #fef9c3; /* Amarillo claro */
+
+    .filters-grid {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .filter-field {
+      flex: 1;
+      min-width: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filters-grid label {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .filters-grid input {
+      background: #020617;
+      border: 1px solid #111827;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #e5e7eb;
+    }
+
+    .filters-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .filters-actions button {
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+      padding: 8px 16px;
+      cursor: pointer;
+      background: #111827;
+      color: #e5e7eb;
+    }
+
+    .filters-actions .apply {
+      background: #2563eb;
+      border-color: #1d4ed8;
+    }
+
+    #active-filters {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #9ca3af;
     }
 
     .loading, .empty {
@@ -202,15 +292,15 @@
     <h3>Filtrar resultados</h3>
     <form id="filters-form">
       <div class="filters-grid">
-        <div>
+        <div class="filter-field">
           <label for="filter-search">Buscar (número de despacho o fecha)</label>
           <input type="text" id="filter-search" placeholder="Ej: 12 o 2024-03-01" />
         </div>
-        <div>
+        <div class="filter-field">
           <label for="filter-from">Desde la fecha</label>
           <input type="date" id="filter-from" />
         </div>
-        <div>
+        <div class="filter-field">
           <label for="filter-to">Hasta la fecha</label>
           <input type="date" id="filter-to" />
         </div>
@@ -223,9 +313,9 @@
     <div id="active-filters">Sin filtros aplicados.</div>
   </div>
 
-  <div id="history-container" class="history-grid">
-    <div class="loading">Cargando historial...</div>
-  </div>
+  <ul id="history-container" class="history-list">
+    <li class="loading">Cargando historial...</li>
+  </ul>
 
   <div id="pagination-controls" class="pagination">
     <button id="btn-prev" disabled>&larr; Anterior</button>
@@ -246,6 +336,32 @@
   const btnNext = document.getElementById('btn-next');
   const pageInfo = document.getElementById('page-info');
   const paginationControls = document.getElementById('pagination-controls');
+  const filtersForm = document.getElementById('filters-form');
+  const filterSearchInput = document.getElementById('filter-search');
+  const filterFromInput = document.getElementById('filter-from');
+  const filterToInput = document.getElementById('filter-to');
+  const activeFiltersEl = document.getElementById('active-filters');
+  const btnClearFilters = document.getElementById('btn-clear-filters');
+
+  const filtersState = {
+    search: '',
+    from: '',
+    to: ''
+  };
+
+  function getTodayInputValue() {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - offset).toISOString().split('T')[0];
+  }
+
+  function seedDefaultDateRange() {
+    const today = getTodayInputValue();
+    filtersState.from = today;
+    filtersState.to = today;
+    filterFromInput.value = today;
+    filterToInput.value = today;
+  }
 
   // Formatear fechas SQL (YYYY-MM-DD HH:MM:SS) a algo legible
   function formatDateTime(sqlDate) {
@@ -331,13 +447,37 @@
     paginationControls.style.display = totalPages <= 1 ? 'none' : 'flex';
   }
 
+  function buildHistoryQuery(page = 1) {
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('limit', HISTORY_LIMIT);
+
+    if (filtersState.search) params.set('search', filtersState.search);
+    if (filtersState.from) params.set('from', filtersState.from);
+    if (filtersState.to) params.set('to', filtersState.to);
+
+    return params.toString();
+  }
+
+  function updateActiveFilters() {
+    const active = [];
+    if (filtersState.search) active.push(`búsqueda: "${filtersState.search}"`);
+    if (filtersState.from) active.push(`desde ${filtersState.from}`);
+    if (filtersState.to) active.push(`hasta ${filtersState.to}`);
+
+    activeFiltersEl.textContent = active.length
+      ? `Filtros activos: ${active.join(' | ')}`
+      : 'Sin filtros aplicados.';
+  }
+
   async function cargarHistorial(page = 1) {
     const container = document.getElementById('history-container');
-    container.innerHTML = `<div class="loading">Cargando historial...</div>`;
+    container.innerHTML = `<li class="loading">Cargando historial...</li>`;
     paginationControls.style.display = 'flex';
 
     try {
-      const resp = await apiFetch(`api/get_history.php?page=${page}&limit=${HISTORY_LIMIT}`);
+      const query = buildHistoryQuery(page);
+      const resp = await apiFetch(`api/get_history.php?${query}`);
       const data = await resp.json();
 
       if (!data.success || !Array.isArray(data.sesiones)) {
@@ -350,7 +490,7 @@
       currentPage = Math.min(Math.max(1, requestedPage), totalPages);
 
       if (data.sesiones.length === 0) {
-        container.innerHTML = `<div class="empty">No se encontraron despachos cerrados en el historial.</div>`;
+        container.innerHTML = `<li class="empty">No se encontraron despachos cerrados en el historial.</li>`;
         actualizarControlesPaginacion();
         return;
       }
@@ -360,32 +500,28 @@
 
       // Crear una tarjeta por cada sesión
       for (const sesion of data.sesiones) {
-        const card = document.createElement('a'); // Cambiamos de <div> a <a>
-        card.className = 'session-card';
-        card.href = `detalle_sesion.html?id=${sesion.id}`;
+        const item = document.createElement('li');
+        item.className = 'history-row';
+
+        const link = document.createElement('a');
+        link.className = 'history-row-link';
+        link.href = `detalle_sesion.html?id=${sesion.id}`;
 
         // Formatear horas
         const horaInicio = formatDateTime(sesion.started_at);
         const horaFin    = formatDateTime(sesion.closed_at);
         const fecha      = formatDate(sesion.fecha);
 
-        card.innerHTML = `
-          <div class="session-header">
-            <h2>Despacho #${sesion.numero_en_dia}</h2>
-            <div class="date">${fecha}</div>
-            <div class="times">
-              ${horaInicio} &ndash; ${horaFin}
-            </div>
+        link.innerHTML = `
+          <div class="history-row-main">
+            <div class="history-row-title">Despacho #${sesion.numero_en_dia}</div>
+            <div class="history-row-date">${fecha}</div>
+            <div class="history-row-times">${horaInicio} &ndash; ${horaFin}</div>
           </div>
-
-          <div class="session-metrics">
+          <div class="history-row-metrics">
             <div class="metric-item">
-              <div class="metric-title">Total Paquetes</div>
+              <div class="metric-title">Total paquetes</div>
               <div class="metric-value total">${sesion.total_scans || 0}</div>
-            </div>
-            <div class="metric-item">
-              <div class="metric-title">Inválidos</div>
-              <div class="metric-value invalid">${sesion.invalidos || 0}</div>
             </div>
             <div class="metric-item">
               <div class="metric-title">Flex OK</div>
@@ -395,9 +531,15 @@
               <div class="metric-title">Etiqueta OK</div>
               <div class="metric-value ok">${sesion.etiqueta_ok || 0}</div>
             </div>
+            <div class="metric-item">
+              <div class="metric-title">Inválidos</div>
+              <div class="metric-value invalid">${sesion.invalidos || 0}</div>
+            </div>
           </div>
         `;
-        container.appendChild(card);
+
+        item.appendChild(link);
+        container.appendChild(item);
       }
 
       actualizarControlesPaginacion();
@@ -421,8 +563,32 @@
     }
   });
 
+  filtersForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    filtersState.search = filterSearchInput.value.trim();
+    filtersState.from = filterFromInput.value;
+    filtersState.to = filterToInput.value;
+    updateActiveFilters();
+    cargarHistorial(1);
+  });
+
+  btnClearFilters.addEventListener('click', () => {
+    filterSearchInput.value = '';
+    filterFromInput.value = '';
+    filterToInput.value = '';
+    filtersState.search = '';
+    filtersState.from = '';
+    filtersState.to = '';
+    updateActiveFilters();
+    cargarHistorial(1);
+  });
+
   // Iniciar la carga de datos
-  window.addEventListener('load', () => cargarHistorial(1));
+  window.addEventListener('load', () => {
+    seedDefaultDateRange();
+    updateActiveFilters();
+    cargarHistorial(1);
+  });
 </script>
 
 </body>

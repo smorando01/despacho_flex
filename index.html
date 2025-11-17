@@ -193,6 +193,27 @@
       min-width: 170px;
     }
 
+    .action-button {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: #fca5a5;
+      cursor: pointer;
+      transition: border-color .2s ease, color .2s ease;
+    }
+
+    .action-button:hover:enabled {
+      border-color: #f87171;
+      color: #f87171;
+    }
+
+    .action-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -356,6 +377,7 @@
           <th>Código</th>
           <th>Tipo</th>
           <th>Estado</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody id="table-body"></tbody>
@@ -455,6 +477,25 @@
     return resp;
   }
 
+  async function parseJsonResponse(resp) {
+    const text = await resp.text();
+
+    if (!text || !text.trim()) {
+      throw new Error(`El servidor respondió ${resp.status} sin contenido. URL: ${resp.url || '(desconocida)'}`);
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      const snippet = text.slice(0, 180).replace(/\s+/g, ' ').trim();
+      console.error('Respuesta no válida del servidor:', { status: resp.status, url: resp.url, cuerpo: text });
+      throw new Error(
+        `El servidor devolvió una respuesta no válida (HTTP ${resp.status}).` +
+        (snippet ? ` Detalle: ${snippet}` : '')
+      );
+    }
+  }
+
   function metricasVacias() {
     return { total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 };
   }
@@ -519,6 +560,7 @@
       const tdCodigo = document.createElement('td');
       const tdTipo   = document.createElement('td');
       const tdEstado = document.createElement('td');
+      const tdAccion = document.createElement('td');
 
       tdHora.textContent   = hora;
       tdCodigo.textContent = registro.codigo;
@@ -548,12 +590,82 @@
       spanEstado.textContent = registro.estado;
       tdEstado.appendChild(spanEstado);
 
+      // ACCIÓN
+      const btnEliminar = document.createElement('button');
+      btnEliminar.type = 'button';
+      btnEliminar.className = 'action-button';
+      btnEliminar.textContent = 'Eliminar';
+
+      if (!registro.id) {
+        btnEliminar.disabled = true;
+        btnEliminar.title = 'Esperando sincronización con el servidor';
+      } else {
+        btnEliminar.addEventListener('click', () => {
+          confirmarEliminarLectura(registro);
+        });
+      }
+
+      tdAccion.appendChild(btnEliminar);
+
       tr.appendChild(tdHora);
       tr.appendChild(tdCodigo);
       tr.appendChild(tdTipo);
       tr.appendChild(tdEstado);
+      tr.appendChild(tdAccion);
 
       tbody.appendChild(tr);
+    }
+  }
+
+  function confirmarEliminarLectura(registro) {
+    if (!registro || !registro.id) return;
+    const descripcion = registro.codigo ? `el código ${registro.codigo}` : 'esta lectura';
+    const mensaje = `¿Eliminar ${descripcion}?\nEsta acción no se puede deshacer.`;
+    if (!window.confirm(mensaje)) return;
+    eliminarLectura(registro.id);
+  }
+
+  async function eliminarLectura(scanId) {
+    if (!scanId) return;
+
+    try {
+      const resp = await apiFetch('api/delete_scan.php', {
+        method: 'POST',
+        body: JSON.stringify({ scan_id: scanId })
+      }, { requireCsrf: true });
+
+      const data = await parseJsonResponse(resp);
+
+      if (!data.success) {
+        alert(data.message || 'No se pudo eliminar la lectura.');
+        return;
+      }
+
+      const index = scans.findIndex(s => Number(s.id) === Number(scanId));
+      if (index !== -1) {
+        scans.splice(index, 1);
+      }
+
+      actualizarMetricasDesdeAPI(data.metrics || metricasVacias());
+      actualizarMetricasUltimo();
+      actualizarTabla();
+
+      if (data.last_scan) {
+        metricLastStatus.textContent = data.last_scan.estado;
+        metricLastCode.textContent   = data.last_scan.codigo;
+        setStatusPill(data.last_scan.estado);
+      } else if (scans.length === 0) {
+        metricLastStatus.textContent = '–';
+        metricLastCode.textContent   = 'Esperando primer escaneo';
+        setStatusPill(null);
+      } else {
+        setStatusPill(scans[scans.length - 1].estado);
+      }
+
+      guardarSesionEnLocalStorage();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Error al eliminar la lectura.');
     }
   }
 
@@ -601,7 +713,7 @@
   async function sincronizarSesionConServidor() {
     try {
       const resp = await apiFetch('api/current_session.php');
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
 
       if (!data.success) {
         throw new Error(data.message || 'No se pudo sincronizar con el servidor.');
@@ -625,6 +737,7 @@
       if (Array.isArray(data.scans)) {
         data.scans.forEach((scan) => {
           scans.push({
+            id: scan.id != null ? Number(scan.id) : null,
             codigo: scan.codigo,
             tipo: scan.tipo,
             estado: scan.estado,
@@ -668,7 +781,7 @@
         body: JSON.stringify({ raw })
       }, { requireCsrf: true });
 
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
 
       if (!data.success) {
         setStatusPill('ERROR');
@@ -689,6 +802,7 @@
       } else {
         // Nuevo registro (OK o CÓDIGO INVÁLIDO)
         scans.push({
+          id     : reg.id != null ? Number(reg.id) : null,
           codigo : reg.codigo,
           tipo   : reg.tipo,          // Flex / Etiqueta Districad / Inválido
           estado : reg.estado,        // OK / CÓDIGO INVÁLIDO
@@ -739,7 +853,7 @@
       const resp = await apiFetch('api/close_session.php', {
         method: 'POST'
       }, { requireCsrf: true });
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
 
       if (!data.success) {
         alert(data.message || 'Error al cerrar el despacho');

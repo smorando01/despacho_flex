@@ -49,7 +49,7 @@ try {
     ];
 
     $stmt = $pdo->prepare("
-        SELECT codigo, tipo, estado, scanned_at
+        SELECT id, codigo, tipo, estado, scanned_at
         FROM scans
         WHERE session_id = ?
         ORDER BY scanned_at ASC, id ASC
@@ -98,6 +98,7 @@ try {
         }
 
         $scan = [
+            'id'     => (int)$row['id'],
             'codigo' => $row['codigo'],
             'tipo'   => $tipoUi,
             'estado' => $estadoUi,

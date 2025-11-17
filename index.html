@@ -477,6 +477,25 @@
     return resp;
   }
 
+  async function parseJsonResponse(resp) {
+    const text = await resp.text();
+
+    if (!text || !text.trim()) {
+      throw new Error(`El servidor respondió ${resp.status} sin contenido. URL: ${resp.url || '(desconocida)'}`);
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      const snippet = text.slice(0, 180).replace(/\s+/g, ' ').trim();
+      console.error('Respuesta no válida del servidor:', { status: resp.status, url: resp.url, cuerpo: text });
+      throw new Error(
+        `El servidor devolvió una respuesta no válida (HTTP ${resp.status}).` +
+        (snippet ? ` Detalle: ${snippet}` : '')
+      );
+    }
+  }
+
   function metricasVacias() {
     return { total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 };
   }
@@ -694,7 +713,7 @@
   async function sincronizarSesionConServidor() {
     try {
       const resp = await apiFetch('api/current_session.php');
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
 
       if (!data.success) {
         throw new Error(data.message || 'No se pudo sincronizar con el servidor.');
@@ -762,7 +781,7 @@
         body: JSON.stringify({ raw })
       }, { requireCsrf: true });
 
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
 
       if (!data.success) {
         setStatusPill('ERROR');
@@ -834,7 +853,7 @@
       const resp = await apiFetch('api/close_session.php', {
         method: 'POST'
       }, { requireCsrf: true });
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
 
       if (!data.success) {
         alert(data.message || 'Error al cerrar el despacho');

@@ -634,7 +634,7 @@
         body: JSON.stringify({ scan_id: scanId })
       }, { requireCsrf: true });
 
-      const data = await parseJsonResponse(resp);
+      const data = await resp.json();
 
       if (!data.success) {
         alert(data.message || 'No se pudo eliminar la lectura.');

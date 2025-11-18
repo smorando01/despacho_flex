@@ -209,6 +209,16 @@
       color: #f87171;
     }
 
+    .action-button.secondary {
+      color: #bfdbfe;
+      border-color: #1f2937;
+    }
+
+    .action-button.secondary:hover:enabled {
+      color: #93c5fd;
+      border-color: #3b82f6aa;
+    }
+
     .action-button:disabled {
       opacity: 0.4;
       cursor: not-allowed;
@@ -273,6 +283,13 @@
     .row-invalid td { background: #451a03; }
 
     .hint { font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+    .actions-cell {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
 
     @media (max-width: 768px) {
       header {
@@ -517,6 +534,12 @@
     }
   }
 
+  function obtenerTipoAlternativo(tipoActual) {
+    if (tipoActual === 'Flex') return 'Etiqueta Districad';
+    if (tipoActual === 'Etiqueta Districad') return 'Flex';
+    return 'Flex';
+  }
+
   function actualizarMetricasDesdeAPI(metrics) {
     if (!metrics) return;
     metricTotal.textContent     = metrics.total       ?? 0;
@@ -596,15 +619,30 @@
       btnEliminar.className = 'action-button';
       btnEliminar.textContent = 'Eliminar';
 
+      const btnCambioTipo = document.createElement('button');
+      btnCambioTipo.type = 'button';
+      btnCambioTipo.className = 'action-button secondary';
+
+      const nuevoTipo = obtenerTipoAlternativo(registro.tipo);
+      btnCambioTipo.textContent = nuevoTipo === 'Flex' ? 'Marcar Flex' : 'Marcar Etiq.';
+      btnCambioTipo.title = 'Usalo si el sistema interpretó mal el tipo de etiqueta';
+
       if (!registro.id) {
         btnEliminar.disabled = true;
         btnEliminar.title = 'Esperando sincronización con el servidor';
+        btnCambioTipo.disabled = true;
+        btnCambioTipo.title = 'Esperando sincronización con el servidor';
       } else {
         btnEliminar.addEventListener('click', () => {
           confirmarEliminarLectura(registro);
         });
+        btnCambioTipo.addEventListener('click', () => {
+          confirmarCambioTipo(registro, nuevoTipo);
+        });
       }
 
+      tdAccion.classList.add('actions-cell');
+      tdAccion.appendChild(btnCambioTipo);
       tdAccion.appendChild(btnEliminar);
 
       tr.appendChild(tdHora);
@@ -615,6 +653,14 @@
 
       tbody.appendChild(tr);
     }
+  }
+
+  function confirmarCambioTipo(registro, nuevoTipo) {
+    if (!registro || !registro.id) return;
+    const descripcion = registro.codigo ? `el código ${registro.codigo}` : 'esta lectura';
+    const mensaje = `¿Cambiar el tipo de ${descripcion} a "${nuevoTipo}"?\nEsto ajustará las métricas de la sesión.`;
+    if (!window.confirm(mensaje)) return;
+    cambiarTipoLectura(registro, nuevoTipo);
   }
 
   function confirmarEliminarLectura(registro) {
@@ -666,6 +712,56 @@
     } catch (err) {
       console.error(err);
       alert(err.message || 'Error al eliminar la lectura.');
+    }
+  }
+
+  async function cambiarTipoLectura(registro, nuevoTipo) {
+    if (!registro || !registro.id) return;
+
+    try {
+      const resp = await apiFetch('api/update_scan_type.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          scan_id: registro.id,
+          nuevo_tipo: nuevoTipo
+        })
+      }, { requireCsrf: true });
+
+      const data = await parseJsonResponse(resp);
+
+      if (!data.success) {
+        alert(data.message || 'No se pudo cambiar el tipo de la lectura.');
+        return;
+      }
+
+      const idx = scans.findIndex(s => Number(s.id) === Number(data.registro.id));
+      if (idx !== -1) {
+        scans[idx] = {
+          ...scans[idx],
+          codigo: data.registro.codigo,
+          tipo: data.registro.tipo,
+          estado: data.registro.estado,
+          ts: data.registro.ts || scans[idx].ts,
+        };
+      }
+
+      actualizarMetricasDesdeAPI(data.metrics || metricasVacias());
+      actualizarMetricasUltimo();
+      actualizarTabla();
+      guardarSesionEnLocalStorage();
+
+      if (data.last_scan) {
+        metricLastStatus.textContent = data.last_scan.estado;
+        metricLastCode.textContent   = data.last_scan.codigo;
+        setStatusPill(data.last_scan.estado);
+      } else if (scans.length === 0) {
+        setStatusPill(null);
+      } else {
+        setStatusPill(scans[scans.length - 1].estado);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Error al cambiar el tipo de la lectura.');
     }
   }
 

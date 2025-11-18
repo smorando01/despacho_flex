@@ -193,27 +193,6 @@
       min-width: 170px;
     }
 
-    .action-button {
-      background: #111827;
-      border: 1px solid #1f2937;
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 11px;
-      color: #fca5a5;
-      cursor: pointer;
-      transition: border-color .2s ease, color .2s ease;
-    }
-
-    .action-button:hover:enabled {
-      border-color: #f87171;
-      color: #f87171;
-    }
-
-    .action-button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -273,6 +252,34 @@
     .row-invalid td { background: #451a03; }
 
     .hint { font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+    .action-button {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: #bfdbfe;
+      cursor: pointer;
+      transition: border-color .2s ease, color .2s ease;
+    }
+
+    .action-button:hover:enabled {
+      border-color: #3b82f6aa;
+      color: #93c5fd;
+    }
+
+    .action-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .actions-cell {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
 
     @media (max-width: 768px) {
       header {
@@ -364,7 +371,6 @@
     <span> | Buscar:</span>
     <input id="search-input" type="text" placeholder="Buscar por código..." />
 
-    <button id="btn-clear">Limpiar sesión local</button>
     <button id="btn-close">Cerrar despacho</button>
   </div>
 
@@ -402,7 +408,6 @@
   const tbody           = document.getElementById('table-body');
   const filterTipo      = document.getElementById('filter-tipo');
   const searchInput     = document.getElementById('search-input');
-  const btnClear        = document.getElementById('btn-clear');
   const btnClose        = document.getElementById('btn-close');
 
   const metricTotal     = document.getElementById('metric-total');
@@ -517,6 +522,12 @@
     }
   }
 
+  function obtenerTipoAlternativo(tipoActual) {
+    if (tipoActual === 'Flex') return 'Etiqueta Districad';
+    if (tipoActual === 'Etiqueta Districad') return 'Flex';
+    return 'Flex';
+  }
+
   function actualizarMetricasDesdeAPI(metrics) {
     if (!metrics) return;
     metricTotal.textContent     = metrics.total       ?? 0;
@@ -596,15 +607,29 @@
       btnEliminar.className = 'action-button';
       btnEliminar.textContent = 'Eliminar';
 
+      const btnCambioTipo = document.createElement('button');
+      btnCambioTipo.type = 'button';
+      btnCambioTipo.className = 'action-button';
+      btnCambioTipo.textContent = 'Modificar Tipo';
+
+      const nuevoTipo = obtenerTipoAlternativo(registro.tipo);
+
       if (!registro.id) {
         btnEliminar.disabled = true;
         btnEliminar.title = 'Esperando sincronización con el servidor';
+        btnCambioTipo.disabled = true;
+        btnCambioTipo.title = 'Esperando sincronización con el servidor';
       } else {
         btnEliminar.addEventListener('click', () => {
           confirmarEliminarLectura(registro);
         });
+        btnCambioTipo.addEventListener('click', () => {
+          confirmarCambioTipo(registro, nuevoTipo);
+        });
       }
 
+      tdAccion.classList.add('actions-cell');
+      tdAccion.appendChild(btnCambioTipo);
       tdAccion.appendChild(btnEliminar);
 
       tr.appendChild(tdHora);
@@ -623,6 +648,14 @@
     const mensaje = `¿Eliminar ${descripcion}?\nEsta acción no se puede deshacer.`;
     if (!window.confirm(mensaje)) return;
     eliminarLectura(registro.id);
+  }
+
+  function confirmarCambioTipo(registro, nuevoTipo) {
+    if (!registro || !registro.id) return;
+    const descripcion = registro.codigo ? `el código ${registro.codigo}` : 'esta lectura';
+    const mensaje = `¿Cambiar el tipo de ${descripcion} a "${nuevoTipo}"?\nEsto ajustará las métricas de la sesión.`;
+    if (!window.confirm(mensaje)) return;
+    cambiarTipoLectura(registro, nuevoTipo);
   }
 
   async function eliminarLectura(scanId) {
@@ -666,6 +699,56 @@
     } catch (err) {
       console.error(err);
       alert(err.message || 'Error al eliminar la lectura.');
+    }
+  }
+
+  async function cambiarTipoLectura(registro, nuevoTipo) {
+    if (!registro || !registro.id) return;
+
+    try {
+      const resp = await apiFetch('api/update_scan_type.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          scan_id   : registro.id,
+          nuevo_tipo: nuevoTipo
+        })
+      }, { requireCsrf: true });
+
+      const data = await parseJsonResponse(resp);
+
+      if (!data.success) {
+        alert(data.message || 'No se pudo cambiar el tipo de la lectura.');
+        return;
+      }
+
+      const idx = scans.findIndex(s => Number(s.id) === Number(data.registro.id));
+      if (idx !== -1) {
+        scans[idx] = {
+          ...scans[idx],
+          codigo: data.registro.codigo,
+          tipo: data.registro.tipo,
+          estado: data.registro.estado,
+          ts: data.registro.ts || scans[idx].ts,
+        };
+      }
+
+      actualizarMetricasDesdeAPI(data.metrics || metricasVacias());
+      actualizarMetricasUltimo();
+      actualizarTabla();
+      guardarSesionEnLocalStorage();
+
+      if (data.last_scan) {
+        metricLastStatus.textContent = data.last_scan.estado;
+        metricLastCode.textContent   = data.last_scan.codigo;
+        setStatusPill(data.last_scan.estado);
+      } else if (scans.length === 0) {
+        setStatusPill(null);
+      } else {
+        setStatusPill(scans[scans.length - 1].estado);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Error al cambiar el tipo de la lectura.');
     }
   }
 
@@ -833,17 +916,6 @@
 
   filterTipo.addEventListener('change', actualizarTabla);
   searchInput.addEventListener('input', actualizarTabla);
-
-  btnClear.addEventListener('click', () => {
-    if (!confirm('¿Limpiar la sesión local actual? Esto NO borra la base de datos.')) return;
-    scans.length = 0;
-    actualizarMetricasDesdeAPI({ total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 });
-    actualizarMetricasUltimo();
-    actualizarTabla();
-    setStatusPill(null);
-    localStorage.removeItem(STORAGE_SCANS_KEY);
-    localStorage.removeItem(STORAGE_METRICS_KEY);
-  });
 
   // Cerrar despacho (marca la sesión como cerrada y envía mail)
   btnClose.addEventListener('click', async () => {

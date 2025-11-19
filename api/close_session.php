@@ -58,6 +58,7 @@ try {
     $total       = 0;
     $flex_ok     = 0;
     $etiqueta_ok = 0;
+    $colecta_ok  = 0;
     $invalidos   = 0;
 
     $primeraHora = null;
@@ -74,6 +75,9 @@ try {
         if ($r['tipo'] === 'ETIQUETA' && $r['estado'] === 'OK') {
             $etiqueta_ok++;
         }
+        if ($r['tipo'] === 'COLECTA' && $r['estado'] === 'OK') {
+            $colecta_ok++;
+        }
         if ($r['estado'] === 'INVALIDO') {
             $invalidos++;
         }
@@ -89,9 +93,15 @@ try {
         $hora = date('H:i:s', $ts);
 
         // texto tipo: "> 12345678901  /  12:34:56  /  Flex  /  OK"
-        $tipoUi = ($r['tipo'] === 'FLEX')
-            ? 'Flex'
-            : (($r['tipo'] === 'ETIQUETA') ? 'Etiqueta Districad' : 'Inválido');
+        if ($r['tipo'] === 'FLEX') {
+            $tipoUi = 'Flex';
+        } elseif ($r['tipo'] === 'ETIQUETA') {
+            $tipoUi = 'Etiqueta Districad';
+        } elseif ($r['tipo'] === 'COLECTA') {
+            $tipoUi = 'Colecta';
+        } else {
+            $tipoUi = 'Inválido';
+        }
 
         $estadoUi = ($r['estado'] === 'OK')
             ? 'OK'
@@ -131,6 +141,7 @@ try {
     $lineas[] = "Paquetes Despachados: {$total}";
     $lineas[] = "- FLEX OK: {$flex_ok}";
     $lineas[] = "- ETIQUETA OK: {$etiqueta_ok}";
+    $lineas[] = "- COLECTA OK: {$colecta_ok}";
     $lineas[] = "- INVÁLIDOS: {$invalidos}";
     $lineas[] = "";
     $lineas[] = "Duración del Despacho: {$duracionStr}";
@@ -159,6 +170,7 @@ try {
             'flex_ok'       => $flex_ok,
             'etiqueta_ok'   => $etiqueta_ok,
             'invalidos'     => $invalidos,
+            'colecta_ok'    => $colecta_ok,
             'fecha'         => $fechaSesion,
             'numero_en_dia' => $numero_en_dia,
         ],

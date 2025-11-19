@@ -97,6 +97,27 @@ try {
 
     $esQR = preg_match('/ñ|hash|sender\?id|security\?digit|id\[/i', $raw) === 1;
 
+    $extraerCodigoColecta = function (string $valor) {
+        $texto = (string)$valor;
+
+        if (preg_match('/id\[ñ\[(.+?)(?:\[|,)/iu', $texto, $match) && isset($match[1])) {
+            if (preg_match('/[A-Za-z0-9]+/', $match[1], $token)) {
+                return strtoupper($token[0]);
+            }
+        }
+
+        if (preg_match('/\b\d{11}\b/', $texto, $match)) {
+            return $match[0];
+        }
+
+        $soloDigitos = preg_replace('/[^\d]/', ' ', $texto);
+        if (preg_match('/(\d{10,13})/', $soloDigitos, $match)) {
+            return $match[1];
+        }
+
+        return null;
+    };
+
     $extraerID = function (string $valor) {
         // Patrón nuevo
         if (preg_match('/\[id\[[ñÑ]\[(\d{8,15})/i', $valor, $m)) {
@@ -114,7 +135,12 @@ try {
         return null;
     };
 
-    if ($esQR) {
+    $codigoColecta = $extraerCodigoColecta($raw);
+    if ($codigoColecta !== null) {
+        $tipo_db      = 'COLECTA';
+        $codigo_final = $codigoColecta;
+        $estado_db    = 'OK';
+    } elseif ($esQR) {
         $idExtraido = $extraerID($raw);
         if ($idExtraido === null) {
             // QR mal formado
@@ -186,6 +212,7 @@ try {
             COUNT(*) AS total,
             SUM(CASE WHEN tipo = 'FLEX'     AND estado = 'OK' THEN 1 ELSE 0 END) AS flex_ok,
             SUM(CASE WHEN tipo = 'ETIQUETA' AND estado = 'OK' THEN 1 ELSE 0 END) AS etiqueta_ok,
+            SUM(CASE WHEN tipo = 'COLECTA'  AND estado = 'OK' THEN 1 ELSE 0 END) AS colecta_ok,
             SUM(CASE WHEN estado = 'INVALIDO' THEN 1 ELSE 0 END)                AS invalidos
         FROM scans
         WHERE session_id = ?
@@ -198,6 +225,7 @@ try {
             'total'       => 0,
             'flex_ok'     => 0,
             'etiqueta_ok' => 0,
+            'colecta_ok'  => 0,
             'invalidos'   => 0,
         ];
     }
@@ -212,6 +240,8 @@ try {
             $tipo_ui = 'Flex';
         } elseif ($tipo_db === 'ETIQUETA') {
             $tipo_ui = 'Etiqueta Districad';
+        } elseif ($tipo_db === 'COLECTA') {
+            $tipo_ui = 'Colecta';
         } else {
             $tipo_ui = $tipo_db;
         }
@@ -247,6 +277,7 @@ try {
             'total'       => (int)$metrics['total'],
             'flex_ok'     => (int)$metrics['flex_ok'],
             'etiqueta_ok' => (int)$metrics['etiqueta_ok'],
+            'colecta_ok'  => (int)$metrics['colecta_ok'],
             'invalidos'   => (int)$metrics['invalidos'],
         ]
     ]);

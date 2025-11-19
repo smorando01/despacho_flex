@@ -8,6 +8,20 @@ require_api_auth();
 require_csrf_token();
 date_default_timezone_set('America/Montevideo');
 
+function tipoUiDesdeDb(?string $tipo): string
+{
+    switch ($tipo) {
+        case 'FLEX':
+            return 'Flex';
+        case 'ETIQUETA':
+            return 'Etiqueta Districad';
+        case 'COLECTA':
+            return 'Colecta';
+        default:
+            return 'Inválido';
+    }
+}
+
 $pdo = null;
 
 try {
@@ -31,6 +45,7 @@ try {
     $mapTipos = [
         'flex'               => 'FLEX',
         'etiqueta districad' => 'ETIQUETA',
+        'colecta'            => 'COLECTA',
     ];
 
     $nuevoTipoKey = strtolower($nuevoTipo);
@@ -98,6 +113,7 @@ try {
             COUNT(*) AS total,
             SUM(CASE WHEN tipo = 'FLEX'     AND estado = 'OK' THEN 1 ELSE 0 END) AS flex_ok,
             SUM(CASE WHEN tipo = 'ETIQUETA' AND estado = 'OK' THEN 1 ELSE 0 END) AS etiqueta_ok,
+            SUM(CASE WHEN tipo = 'COLECTA'  AND estado = 'OK' THEN 1 ELSE 0 END) AS colecta_ok,
             SUM(CASE WHEN estado = 'INVALIDO' THEN 1 ELSE 0 END)                AS invalidos
         FROM scans
         WHERE session_id = ?
@@ -110,6 +126,7 @@ try {
             'total'       => 0,
             'flex_ok'     => 0,
             'etiqueta_ok' => 0,
+            'colecta_ok'  => 0,
             'invalidos'   => 0,
         ];
     }
@@ -128,12 +145,7 @@ try {
     $lastScan = null;
 
     if ($lastRow) {
-        $tipoUi = 'Inválido';
-        if ($lastRow['tipo'] === 'FLEX') {
-            $tipoUi = 'Flex';
-        } elseif ($lastRow['tipo'] === 'ETIQUETA') {
-            $tipoUi = 'Etiqueta Districad';
-        }
+        $tipoUi = tipoUiDesdeDb($lastRow['tipo']);
 
         if ($lastRow['estado'] === 'INVALIDO') {
             $estadoUi = 'CÓDIGO INVÁLIDO';
@@ -163,7 +175,7 @@ try {
     $registroUi = [
         'id'     => $scanId,
         'codigo' => $codigoFinal,
-        'tipo'   => $nuevoTipoDb === 'FLEX' ? 'Flex' : 'Etiqueta Districad',
+        'tipo'   => tipoUiDesdeDb($nuevoTipoDb),
         'estado' => 'OK',
         'ts'     => $ts * 1000,
     ];
@@ -175,6 +187,7 @@ try {
             'total'       => (int)$metrics['total'],
             'flex_ok'     => (int)$metrics['flex_ok'],
             'etiqueta_ok' => (int)$metrics['etiqueta_ok'],
+            'colecta_ok'  => (int)$metrics['colecta_ok'],
             'invalidos'   => (int)$metrics['invalidos'],
         ],
         'last_scan' => $lastScan,

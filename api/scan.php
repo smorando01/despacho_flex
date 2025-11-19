@@ -102,17 +102,23 @@ try {
 
         if (preg_match('/id\[ñ\[(.+?)(?:\[|,)/iu', $texto, $match) && isset($match[1])) {
             if (preg_match('/[A-Za-z0-9]+/', $match[1], $token)) {
-                return strtoupper($token[0]);
+                $tokenLimpio = strtoupper($token[0]);
+                if (preg_match('/[A-Z]/', $tokenLimpio)) {
+                    return $tokenLimpio;
+                }
             }
         }
 
-        if (preg_match('/\b\d{11}\b/', $texto, $match)) {
-            return $match[0];
+        $soloNumero = preg_replace('/\D/', '', trim($texto));
+        if ($soloNumero !== '' && preg_match('/^\d{11}$/', trim($texto))) {
+            return $soloNumero;
         }
 
-        $soloDigitos = preg_replace('/[^\d]/', ' ', $texto);
-        if (preg_match('/(\d{10,13})/', $soloDigitos, $match)) {
-            return $match[1];
+        if (stripos($texto, 'id[') === false) {
+            $soloDigitos = preg_replace('/[^\d]/', ' ', $texto);
+            if (preg_match('/(\d{10,13})/', $soloDigitos, $match)) {
+                return $match[1];
+            }
         }
 
         return null;

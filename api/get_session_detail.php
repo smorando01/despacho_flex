@@ -3,9 +3,8 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/auth.php';
-require_api_auth();
-
 require __DIR__ . '/config.php';
+require_api_auth();
 date_default_timezone_set('America/Montevideo');
 
 // 1. Obtener y validar el ID de la sesión desde la URL (?id=...)

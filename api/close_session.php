@@ -3,27 +3,25 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/auth.php';
+require __DIR__ . '/config.php';
 require_api_auth();
 require_csrf_token();
-
-require __DIR__ . '/config.php';
 date_default_timezone_set('America/Montevideo');
 
 try {
     $pdo = get_pdo();
 
-    $hoy     = date('Y-m-d');
     $courier = 'FLEX';
 
-    // 1) Buscar sesión abierta de hoy
+    // 1) Buscar sesión abierta (aunque sea de días anteriores)
     $stmt = $pdo->prepare("
         SELECT id, numero_en_dia, fecha, started_at
         FROM sessions
-        WHERE fecha = ? AND courier = ? AND closed_at IS NULL
+        WHERE courier = ? AND closed_at IS NULL
         ORDER BY id DESC
         LIMIT 1
     ");
-    $stmt->execute([$hoy, $courier]);
+    $stmt->execute([$courier]);
     $session = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$session) {

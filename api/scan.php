@@ -3,10 +3,9 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/auth.php';
+require __DIR__ . '/config.php';
 require_api_auth();
 require_csrf_token();
-
-require __DIR__ . '/config.php';
 date_default_timezone_set('America/Montevideo');
 
 try {
@@ -37,7 +36,7 @@ try {
     $pdo = get_pdo();
 
     // ------------------------------------------------------------------
-    // 1) Buscar o crear sesión abierta de hoy (courier FLEX)
+    // 1) Buscar o crear sesión abierta (courier FLEX)
     // ------------------------------------------------------------------
     $hoy     = date('Y-m-d');
     $courier = 'FLEX';
@@ -47,23 +46,23 @@ try {
 
     $pdo->beginTransaction();
     try {
-        // Sesión abierta de hoy para FLEX
+        // Sesión abierta para FLEX (sin importar fecha original)
         $stmt = $pdo->prepare("
             SELECT id, numero_en_dia
             FROM sessions
-            WHERE fecha = ? AND courier = ? AND closed_at IS NULL
+            WHERE courier = ? AND closed_at IS NULL
             ORDER BY id DESC
             LIMIT 1
             FOR UPDATE
         ");
-        $stmt->execute([$hoy, $courier]);
+        $stmt->execute([$courier]);
         $session = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($session) {
             $session_id    = (int)$session['id'];
             $numero_en_dia = (int)$session['numero_en_dia'];
         } else {
-            // calcular número de despacho del día
+            // calcular número de despacho del día actual
             $stmt = $pdo->prepare("
                 SELECT COALESCE(MAX(numero_en_dia), 0) AS max_n
                 FROM sessions

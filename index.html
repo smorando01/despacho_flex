@@ -236,12 +236,6 @@
       border: 1px solid #3b82f655;
     }
 
-    .pill-colecta {
-      background: #a855f733;
-      color: #f5d0fe;
-      border: 1px solid #c084fc55;
-    }
-
     .pill-estado-ok {
       background: #22c55e1a;
       color: #bbf7d0;
@@ -337,12 +331,6 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Colecta</div>
-      <div class="card-value" id="metric-colecta">0</div>
-      <div class="card-sub">Códigos OK</div>
-    </div>
-
-    <div class="card">
       <div class="card-title">Inválidos</div>
       <div class="card-value" id="metric-invalid">0</div>
       <div class="card-sub">Para ajuste / revisión</div>
@@ -377,7 +365,6 @@
       <option value="ALL">Todos los tipos</option>
       <option value="Flex">Solo Flex</option>
       <option value="Etiqueta Districad">Solo Etiqueta Districad</option>
-      <option value="Colecta">Solo Colecta</option>
       <option value="Invalido">Solo inválidos</option>
     </select>
 
@@ -426,11 +413,9 @@
   const metricTotal     = document.getElementById('metric-total');
   const metricFlex      = document.getElementById('metric-flex');
   const metricDistricad = document.getElementById('metric-districad');
-  const metricColecta   = document.getElementById('metric-colecta');
   const metricInvalid   = document.getElementById('metric-invalid');
   const metricLastStatus= document.getElementById('metric-last-status');
   const metricLastCode  = document.getElementById('metric-last-code');
-  const TIPOS_UI        = ['Flex', 'Etiqueta Districad', 'Colecta'];
 
   function clearStoredApiKey() {
     apiKey = '';
@@ -517,7 +502,7 @@
   }
 
   function metricasVacias() {
-    return { total: 0, flex_ok: 0, etiqueta_ok: 0, colecta_ok: 0, invalidos: 0 };
+    return { total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 };
   }
 
   function setStatusPill(estadoUi) {
@@ -537,33 +522,10 @@
     }
   }
 
-  function solicitarNuevoTipo(registro) {
-    const opcionesTexto = TIPOS_UI.map((tipo, index) => `${index + 1}) ${tipo}`).join('\n');
-    const descripcion = registro && registro.codigo ? `el código ${registro.codigo}` : 'esta lectura';
-    const actual = registro && registro.tipo ? registro.tipo : 'Sin tipo';
-    const input = window.prompt(
-      `Seleccioná el nuevo tipo para ${descripcion}.\nActual: ${actual}\n\n${opcionesTexto}\n\nIngresá el número o el nombre del tipo.`,
-      actual
-    );
-
-    if (!input) return null;
-
-    const valor = input.trim();
-    if (!valor) return null;
-
-    let elegido = null;
-    const numero = Number(valor);
-    if (!Number.isNaN(numero) && numero >= 1 && numero <= TIPOS_UI.length) {
-      elegido = TIPOS_UI[numero - 1];
-    } else {
-      elegido = TIPOS_UI.find(tipo => tipo.toLowerCase() === valor.toLowerCase()) || null;
-    }
-
-    if (!elegido || elegido === actual) {
-      return null;
-    }
-
-    return elegido;
+  function obtenerTipoAlternativo(tipoActual) {
+    if (tipoActual === 'Flex') return 'Etiqueta Districad';
+    if (tipoActual === 'Etiqueta Districad') return 'Flex';
+    return 'Flex';
   }
 
   function actualizarMetricasDesdeAPI(metrics) {
@@ -571,7 +533,6 @@
     metricTotal.textContent     = metrics.total       ?? 0;
     metricFlex.textContent      = metrics.flex_ok     ?? 0;
     metricDistricad.textContent = metrics.etiqueta_ok ?? 0;
-    metricColecta.textContent   = metrics.colecta_ok  ?? 0;
     metricInvalid.textContent   = metrics.invalidos   ?? 0;
   }
 
@@ -595,7 +556,6 @@
     const filtrados = scans.filter(s => {
       if (filtro === 'Flex' && s.tipo !== 'Flex') return false;
       if (filtro === 'Etiqueta Districad' && s.tipo !== 'Etiqueta Districad') return false;
-      if (filtro === 'Colecta' && s.tipo !== 'Colecta') return false;
       if (filtro === 'Invalido' && s.estado !== 'CÓDIGO INVÁLIDO') return false;
       if (search && !s.codigo.includes(search)) return false;
       return true;
@@ -623,15 +583,9 @@
         spanTipo.classList.add('pill-estado-inv');
         spanTipo.textContent = 'Inválido';
       } else {
-        if (registro.tipo === 'Flex') {
-          spanTipo.classList.add('pill-flex');
-        } else if (registro.tipo === 'Etiqueta Districad') {
-          spanTipo.classList.add('pill-districad');
-        } else if (registro.tipo === 'Colecta') {
-          spanTipo.classList.add('pill-colecta');
-        } else {
-          spanTipo.classList.add('pill-estado-inv');
-        }
+        spanTipo.classList.add(
+          registro.tipo === 'Flex' ? 'pill-flex' : 'pill-districad'
+        );
         spanTipo.textContent = registro.tipo;
       }
       tdTipo.appendChild(spanTipo);
@@ -658,6 +612,8 @@
       btnCambioTipo.className = 'action-button';
       btnCambioTipo.textContent = 'Modificar Tipo';
 
+      const nuevoTipo = obtenerTipoAlternativo(registro.tipo);
+
       if (!registro.id) {
         btnEliminar.disabled = true;
         btnEliminar.title = 'Esperando sincronización con el servidor';
@@ -668,7 +624,7 @@
           confirmarEliminarLectura(registro);
         });
         btnCambioTipo.addEventListener('click', () => {
-          confirmarCambioTipo(registro);
+          confirmarCambioTipo(registro, nuevoTipo);
         });
       }
 
@@ -694,15 +650,11 @@
     eliminarLectura(registro.id);
   }
 
-  function confirmarCambioTipo(registro) {
+  function confirmarCambioTipo(registro, nuevoTipo) {
     if (!registro || !registro.id) return;
-    const nuevoTipo = solicitarNuevoTipo(registro);
-    if (!nuevoTipo) return;
-
     const descripcion = registro.codigo ? `el código ${registro.codigo}` : 'esta lectura';
     const mensaje = `¿Cambiar el tipo de ${descripcion} a "${nuevoTipo}"?\nEsto ajustará las métricas de la sesión.`;
     if (!window.confirm(mensaje)) return;
-
     cambiarTipoLectura(registro, nuevoTipo);
   }
 
@@ -808,7 +760,6 @@
         total       : Number(metricTotal.textContent)     || 0,
         flex_ok     : Number(metricFlex.textContent)      || 0,
         etiqueta_ok : Number(metricDistricad.textContent) || 0,
-        colecta_ok  : Number(metricColecta.textContent)   || 0,
         invalidos   : Number(metricInvalid.textContent)   || 0,
       };
       localStorage.setItem(STORAGE_METRICS_KEY, JSON.stringify(metrics));
@@ -983,7 +934,7 @@
 
       // Limpiar sesión local
       scans.length = 0;
-      actualizarMetricasDesdeAPI({ total: 0, flex_ok: 0, etiqueta_ok: 0, colecta_ok: 0, invalidos: 0 });
+      actualizarMetricasDesdeAPI({ total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 });
       actualizarMetricasUltimo();
       actualizarTabla();
       setStatusPill(null);
@@ -998,7 +949,7 @@
         `Fecha: ${fechaResumen}\n` +
         `Despacho #: ${numeroResumen}\n` +
         `Paquetes: ${m.total || 0}\n` +
-        `Flex OK: ${m.flex_ok || 0} | Etiqueta OK: ${m.etiqueta_ok || 0} | Colecta OK: ${m.colecta_ok || 0} | Inválidos: ${m.invalidos || 0}`
+        `Flex OK: ${m.flex_ok || 0} | Etiqueta OK: ${m.etiqueta_ok || 0} | Inválidos: ${m.invalidos || 0}`
       );
       await sincronizarSesionConServidor();
     } catch (e) {

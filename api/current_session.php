@@ -31,7 +31,6 @@ try {
                 'total'       => 0,
                 'flex_ok'     => 0,
                 'etiqueta_ok' => 0,
-                'colecta_ok'  => 0,
                 'invalidos'   => 0,
             ],
             'last_scan'  => null,
@@ -60,7 +59,6 @@ try {
         'total'       => 0,
         'flex_ok'     => 0,
         'etiqueta_ok' => 0,
-        'colecta_ok'  => 0,
         'invalidos'   => 0,
     ];
     $scans = [];
@@ -75,9 +73,6 @@ try {
         if ($row['tipo'] === 'ETIQUETA' && $row['estado'] === 'OK') {
             $metrics['etiqueta_ok']++;
         }
-        if ($row['tipo'] === 'COLECTA' && $row['estado'] === 'OK') {
-            $metrics['colecta_ok']++;
-        }
         if ($row['estado'] === 'INVALIDO') {
             $metrics['invalidos']++;
         }
@@ -87,8 +82,6 @@ try {
             $tipoUi = 'Flex';
         } elseif ($row['tipo'] === 'ETIQUETA') {
             $tipoUi = 'Etiqueta Districad';
-        } elseif ($row['tipo'] === 'COLECTA') {
-            $tipoUi = 'Colecta';
         }
 
         if ($row['estado'] === 'INVALIDO') {

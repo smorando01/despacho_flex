@@ -30,6 +30,7 @@ try {
 
     $mapTipos = [
         'flex'               => 'FLEX',
+        'colecta'            => 'COLECTA',
         'etiqueta districad' => 'ETIQUETA',
     ];
 
@@ -96,9 +97,8 @@ try {
     $stmt = $pdo->prepare("
         SELECT
             COUNT(*) AS total,
-            SUM(CASE WHEN tipo = 'FLEX'     AND estado = 'OK' THEN 1 ELSE 0 END) AS flex_ok,
-            SUM(CASE WHEN tipo = 'ETIQUETA' AND estado = 'OK' THEN 1 ELSE 0 END) AS etiqueta_ok,
-            SUM(CASE WHEN estado = 'INVALIDO' THEN 1 ELSE 0 END)                AS invalidos
+            SUM(CASE WHEN estado = 'OK' THEN 1 ELSE 0 END) AS ok,
+            SUM(CASE WHEN estado = 'INVALIDO' THEN 1 ELSE 0 END) AS invalidos
         FROM scans
         WHERE session_id = ?
     ");
@@ -107,10 +107,9 @@ try {
 
     if (!$metrics) {
         $metrics = [
-            'total'       => 0,
-            'flex_ok'     => 0,
-            'etiqueta_ok' => 0,
-            'invalidos'   => 0,
+            'total'     => 0,
+            'ok'        => 0,
+            'invalidos' => 0,
         ];
     }
 
@@ -133,6 +132,8 @@ try {
             $tipoUi = 'Flex';
         } elseif ($lastRow['tipo'] === 'ETIQUETA') {
             $tipoUi = 'Etiqueta Districad';
+        } elseif ($lastRow['tipo'] === 'COLECTA') {
+            $tipoUi = 'Colecta';
         }
 
         if ($lastRow['estado'] === 'INVALIDO') {
@@ -163,7 +164,7 @@ try {
     $registroUi = [
         'id'     => $scanId,
         'codigo' => $codigoFinal,
-        'tipo'   => $nuevoTipoDb === 'FLEX' ? 'Flex' : 'Etiqueta Districad',
+        'tipo'   => $nuevoTipoDb === 'FLEX' ? 'Flex' : ($nuevoTipoDb === 'COLECTA' ? 'Colecta' : 'Etiqueta Districad'),
         'estado' => 'OK',
         'ts'     => $ts * 1000,
     ];
@@ -172,10 +173,9 @@ try {
         'success'  => true,
         'registro' => $registroUi,
         'metrics'  => [
-            'total'       => (int)$metrics['total'],
-            'flex_ok'     => (int)$metrics['flex_ok'],
-            'etiqueta_ok' => (int)$metrics['etiqueta_ok'],
-            'invalidos'   => (int)$metrics['invalidos'],
+            'total'     => (int)$metrics['total'],
+            'ok'        => (int)$metrics['ok'],
+            'invalidos' => (int)$metrics['invalidos'],
         ],
         'last_scan' => $lastScan,
     ]);

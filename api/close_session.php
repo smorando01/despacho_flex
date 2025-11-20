@@ -11,17 +11,14 @@ date_default_timezone_set('America/Montevideo');
 try {
     $pdo = get_pdo();
 
-    $courier = 'FLEX';
-
-    // 1) Buscar sesión abierta (aunque sea de días anteriores)
     $stmt = $pdo->prepare("
-        SELECT id, numero_en_dia, fecha, started_at
+        SELECT id, numero_en_dia, fecha, started_at, courier, transportista, matricula
         FROM sessions
-        WHERE courier = ? AND closed_at IS NULL
+        WHERE closed_at IS NULL
         ORDER BY id DESC
         LIMIT 1
     ");
-    $stmt->execute([$courier]);
+    $stmt->execute();
     $session = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$session) {
@@ -35,8 +32,11 @@ try {
     $session_id    = (int)$session['id'];
     $numero_en_dia = (int)$session['numero_en_dia'];
     $fechaSesion   = $session['fecha'];
+    $courier       = strtoupper((string)$session['courier']);
+    $transportista = $session['transportista'] ?? '';
+    $matricula     = $session['matricula'] ?? '';
+    $tipoUi        = $courier === 'COLECTA' ? 'Colecta' : 'Flex';
 
-    // 2) Traer todos los scans de la sesión
     $stmt = $pdo->prepare("
         SELECT codigo, tipo, estado, scanned_at
         FROM scans
@@ -54,11 +54,9 @@ try {
         exit;
     }
 
-    // 3) Calcular métricas
-    $total       = 0;
-    $flex_ok     = 0;
-    $etiqueta_ok = 0;
-    $invalidos   = 0;
+    $total     = 0;
+    $okCount   = 0;
+    $invalidos = 0;
 
     $primeraHora = null;
     $ultimaHora  = null;
@@ -68,11 +66,8 @@ try {
     foreach ($rows as $r) {
         $total++;
 
-        if ($r['tipo'] === 'FLEX' && $r['estado'] === 'OK') {
-            $flex_ok++;
-        }
-        if ($r['tipo'] === 'ETIQUETA' && $r['estado'] === 'OK') {
-            $etiqueta_ok++;
+        if ($r['estado'] === 'OK') {
+            $okCount++;
         }
         if ($r['estado'] === 'INVALIDO') {
             $invalidos++;
@@ -88,19 +83,12 @@ try {
 
         $hora = date('H:i:s', $ts);
 
-        // texto tipo: "> 12345678901  /  12:34:56  /  Flex  /  OK"
-        $tipoUi = ($r['tipo'] === 'FLEX')
-            ? 'Flex'
-            : (($r['tipo'] === 'ETIQUETA') ? 'Etiqueta Districad' : 'Inválido');
+        $tipoLinea = ($r['tipo'] === 'COLECTA') ? 'Colecta' : (($r['tipo'] === 'FLEX') ? 'Flex' : $r['tipo']);
+        $estadoUi  = ($r['estado'] === 'OK') ? 'OK' : (($r['estado'] === 'INVALIDO') ? 'CÓDIGO INVÁLIDO' : $r['estado']);
 
-        $estadoUi = ($r['estado'] === 'OK')
-            ? 'OK'
-            : (($r['estado'] === 'INVALIDO') ? 'CÓDIGO INVÁLIDO' : $r['estado']);
-
-        $listado[] = "> {$r['codigo']}  /  {$hora}  /  {$tipoUi}  /  {$estadoUi}";
+        $listado[] = "> {$r['codigo']}  /  {$hora}  /  {$tipoLinea}  /  {$estadoUi}";
     }
 
-    // duración
     $duracionSeg = max(0, $ultimaHora - $primeraHora);
     $dh = str_pad(floor($duracionSeg / 3600), 2, '0', STR_PAD_LEFT);
     $dm = str_pad(floor(($duracionSeg % 3600) / 60), 2, '0', STR_PAD_LEFT);
@@ -111,7 +99,6 @@ try {
         ? number_format($total / ($duracionSeg / 60), 2, ',', '')
         : '-';
 
-    // 4) Cerrar la sesión
     $stmt = $pdo->prepare("
         UPDATE sessions
         SET closed_at = NOW()
@@ -119,19 +106,21 @@ try {
     ");
     $stmt->execute([$session_id]);
 
-    // 5) Armar cuerpo del mail
     $fechaHoyFmt  = date('d/m/Y', strtotime($fechaSesion));
     $horaCierre   = date('H:i:s');
-    $subject      = "📦 Despacho Flex - {$fechaHoyFmt} #{$numero_en_dia}";
+    $subject      = "📦 Despacho {$tipoUi} - {$fechaHoyFmt} #{$numero_en_dia}";
 
     $lineas = [];
+    $lineas[] = "Tipo de Despacho: {$tipoUi}";
+    $lineas[] = "Empresa de Transporte: " . ($transportista !== '' ? $transportista : 'N/A');
+    $lineas[] = "Matrícula del Vehículo: " . ($matricula !== '' ? $matricula : 'N/A');
+    $lineas[] = "";
     $lineas[] = "Resumen del Despacho día {$fechaHoyFmt} / Hora de Cierre: {$horaCierre}";
     $lineas[] = "Despacho #: {$numero_en_dia}";
     $lineas[] = "";
-    $lineas[] = "Paquetes Despachados: {$total}";
-    $lineas[] = "- FLEX OK: {$flex_ok}";
-    $lineas[] = "- ETIQUETA OK: {$etiqueta_ok}";
-    $lineas[] = "- INVÁLIDOS: {$invalidos}";
+    $lineas[] = "Paquetes registrados: {$total}";
+    $lineas[] = "- OK: {$okCount}";
+    $lineas[] = "- Inválidos: {$invalidos}";
     $lineas[] = "";
     $lineas[] = "Duración del Despacho: {$duracionStr}";
     $lineas[] = "Velocidad promedio: {$velocidad} paquetes/min";
@@ -142,7 +131,6 @@ try {
 
     $body = implode("\r\n", $lineas);
 
-    // 6) Enviar mail
     $to = 'santiago@amvuy.com, prueba@amvuy.com, prueba2@amvstore.com.uy';
     $headers  = "From: Despacho Flex <no-reply@amvstore.com.uy>\r\n";
     $headers .= "Reply-To: santiago@amvuy.com\r\n";
@@ -156,11 +144,13 @@ try {
         'message'       => $mailOk ? 'Despacho cerrado y mail enviado.' : 'Despacho cerrado, pero el mail no se pudo enviar.',
         'metrics'       => [
             'total'         => $total,
-            'flex_ok'       => $flex_ok,
-            'etiqueta_ok'   => $etiqueta_ok,
+            'ok'            => $okCount,
             'invalidos'     => $invalidos,
             'fecha'         => $fechaSesion,
             'numero_en_dia' => $numero_en_dia,
+            'courier'       => $courier,
+            'transportista' => $transportista,
+            'matricula'     => $matricula,
         ],
         'numero_en_dia' => $numero_en_dia
     ]);

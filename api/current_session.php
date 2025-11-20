@@ -10,14 +10,16 @@ date_default_timezone_set('America/Montevideo');
 try {
     $pdo = get_pdo();
 
+    $courier = 'FLEX';
+
     $stmt = $pdo->prepare("
-        SELECT id, numero_en_dia, fecha, started_at, courier, transportista, matricula
+        SELECT id, numero_en_dia, fecha, started_at
         FROM sessions
-        WHERE closed_at IS NULL
+        WHERE courier = ? AND closed_at IS NULL
         ORDER BY id DESC
         LIMIT 1
     ");
-    $stmt->execute();
+    $stmt->execute([$courier]);
     $session = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$session) {
@@ -26,9 +28,10 @@ try {
             'session'    => null,
             'scans'      => [],
             'metrics'    => [
-                'total'     => 0,
-                'ok'        => 0,
-                'invalidos' => 0,
+                'total'       => 0,
+                'flex_ok'     => 0,
+                'etiqueta_ok' => 0,
+                'invalidos'   => 0,
             ],
             'last_scan'  => null,
             'csrf_token' => issue_csrf_token(),
@@ -36,14 +39,11 @@ try {
         exit;
     }
 
-    $sessionData = [
+    $session = [
         'id'            => (int)$session['id'],
         'numero_en_dia' => (int)$session['numero_en_dia'],
         'fecha'         => $session['fecha'],
         'started_at'    => $session['started_at'],
-        'courier'       => strtoupper($session['courier']),
-        'transportista' => $session['transportista'] ?? '',
-        'matricula'     => $session['matricula'] ?? '',
     ];
 
     $stmt = $pdo->prepare("
@@ -52,29 +52,43 @@ try {
         WHERE session_id = ?
         ORDER BY scanned_at ASC, id ASC
     ");
-    $stmt->execute([$sessionData['id']]);
+    $stmt->execute([$session['id']]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $metrics = [
-        'total'     => 0,
-        'ok'        => 0,
-        'invalidos' => 0,
+        'total'       => 0,
+        'flex_ok'     => 0,
+        'etiqueta_ok' => 0,
+        'invalidos'   => 0,
     ];
     $scans = [];
     $lastScan = null;
-    $tipoUi = $sessionData['courier'] === 'COLECTA' ? 'Colecta' : 'Flex';
 
     foreach ($rows as $row) {
         $metrics['total']++;
 
-        if ($row['estado'] === 'OK') {
-            $metrics['ok']++;
+        if ($row['tipo'] === 'FLEX' && $row['estado'] === 'OK') {
+            $metrics['flex_ok']++;
+        }
+        if ($row['tipo'] === 'ETIQUETA' && $row['estado'] === 'OK') {
+            $metrics['etiqueta_ok']++;
         }
         if ($row['estado'] === 'INVALIDO') {
             $metrics['invalidos']++;
         }
 
-        $estadoUi = ($row['estado'] === 'INVALIDO') ? 'CÓDIGO INVÁLIDO' : $row['estado'];
+        $tipoUi = 'Inválido';
+        if ($row['tipo'] === 'FLEX') {
+            $tipoUi = 'Flex';
+        } elseif ($row['tipo'] === 'ETIQUETA') {
+            $tipoUi = 'Etiqueta Districad';
+        }
+
+        if ($row['estado'] === 'INVALIDO') {
+            $estadoUi = 'CÓDIGO INVÁLIDO';
+        } else {
+            $estadoUi = $row['estado'];
+        }
 
         $timestamp = strtotime($row['scanned_at']);
         if ($timestamp === false) {
@@ -95,7 +109,7 @@ try {
 
     echo json_encode([
         'success'    => true,
-        'session'    => $sessionData,
+        'session'    => $session,
         'scans'      => $scans,
         'metrics'    => $metrics,
         'last_scan'  => $lastScan,

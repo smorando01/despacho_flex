@@ -2,54 +2,33 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Despacho Flex & Colecta</title>
+  <title>Despacho Flex & Districad</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root {
-      --bg: #050815;
-      --panel: #0b1220;
-      --panel-strong: #0f172a;
-      --border: #111827;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --accent: #22c55e;
-      --accent-soft: rgba(34, 197, 94, 0.16);
-      --accent-strong: rgba(34, 197, 94, 0.45);
-    }
-
-    body.courier-colecta {
-      --accent: #a855f7;
-      --accent-soft: rgba(168, 85, 247, 0.16);
-      --accent-strong: rgba(168, 85, 247, 0.45);
-    }
-
     * { box-sizing: border-box; }
 
     body {
-      background: radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.08), transparent 25%),
-                  radial-gradient(circle at 80% 10%, rgba(168, 85, 247, 0.08), transparent 25%),
-                  var(--bg);
-      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
       margin: 0;
-      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      min-height: 100vh;
+      padding: 0;
     }
 
     header {
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      border-bottom: 1px solid #111827;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: #020617;
       position: sticky;
       top: 0;
       z-index: 10;
-      backdrop-filter: blur(12px);
-      background: rgba(5, 8, 21, 0.9);
     }
 
-    header h1 { margin: 0; font-size: 20px; letter-spacing: .02em; }
-    header .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    header h1 { margin: 0; font-size: 18px; }
+    header .subtitle { font-size: 12px; color: #9ca3af; margin-top: 3px; }
 
     .header-actions {
       display: flex;
@@ -58,21 +37,21 @@
     }
 
     .tag {
-      font-size: 12px;
-      padding: 6px 12px;
+      font-size: 11px;
+      padding: 3px 10px;
       border-radius: 999px;
-      border: 1px solid var(--accent-strong);
-      background: var(--accent-soft);
-      color: var(--text);
+      background: #22c55e1a;
+      border: 1px solid #22c55e55;
+      color: #bbf7d0;
     }
 
     .link-button {
       font-size: 12px;
-      padding: 8px 14px;
+      padding: 6px 14px;
       border-radius: 999px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text);
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: #bfdbfe;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
@@ -80,396 +59,363 @@
     }
 
     .link-button:hover {
-      border-color: var(--accent);
+      border-color: #3b82f6aa;
+      text-decoration: none;
     }
 
     .container {
-      padding: 18px 24px 32px;
-      max-width: 1180px;
+      padding: 16px 24px 32px;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
-    .panels-grid {
+    .cards {
       display: grid;
-      gap: 16px;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
     }
 
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px 18px;
+    .card {
+      background: #020617;
+      border-radius: 12px;
+      padding: 12px 14px;
+      border: 1px solid #111827;
     }
 
-    .panel h2 {
-      margin: 0 0 8px;
-      font-size: 16px;
-      letter-spacing: .01em;
-    }
-
-    .label {
-      font-size: 12px;
+    .card-title {
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: .08em;
-      color: var(--muted);
+      color: #9ca3af;
+      margin-bottom: 4px;
     }
 
-    .input-group {
+    .card-value { font-size: 22px; font-weight: 600; }
+    .card-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    .scan-box {
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid #111827;
+      background: #020617;
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
     }
 
-    input, select {
+    .scan-label { font-size: 13px; margin-right: 4px; }
+
+    .scan-input { flex: 1 1 200px; min-width: 200px; }
+
+    .scan-input input {
       width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--panel-strong);
-      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: #e5e7eb;
       font-size: 14px;
       outline: none;
     }
 
-    input:focus, select:focus {
-      border-color: var(--accent);
-    }
-
-    button {
-      cursor: pointer;
-      border: none;
-    }
-
-    .primary-btn {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 10px;
-      background: linear-gradient(120deg, var(--accent), var(--accent-strong));
-      border: 1px solid var(--accent-strong);
-      color: #0b101c;
-      font-weight: 700;
-      letter-spacing: .01em;
-      transition: transform .1s ease, box-shadow .2s ease;
-    }
-
-    .primary-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-    }
-
-    .ghost-btn {
-      padding: 9px 14px;
-      border-radius: 999px;
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-size: 13px;
-    }
-
-    .status-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--accent-strong);
-      background: var(--accent-soft);
-      color: var(--text);
-      font-size: 13px;
-    }
-
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin: 12px 0 18px;
-    }
-
-    .metric-card {
-      background: var(--panel);
-      border-radius: 12px;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-    }
-
-    .metric-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    .metric-value {
-      font-size: 22px;
-      font-weight: 700;
-    }
-
-    .metric-sub {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    .scan-box {
-      margin-bottom: 14px;
-      padding: 14px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      display: grid;
-      gap: 10px;
-    }
-
-    .scan-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .scan-row input {
-      flex: 1 1 260px;
-    }
+    .scan-input input:focus { border-color: #4b5563; }
 
     .pill-status {
       font-size: 12px;
-      padding: 6px 12px;
+      padding: 4px 10px;
       border-radius: 999px;
-      border: 1px solid var(--border);
-      color: var(--text);
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       min-width: 120px;
-      text-align: center;
+      justify-content: center;
     }
 
     .pill-status.ok {
-      background: var(--accent-soft);
-      border-color: var(--accent-strong);
+      background: #22c55e1a;
+      border-color: #22c55e55;
+      color: #bbf7d0;
     }
 
     .pill-status.invalid {
-      background: rgba(250, 204, 21, 0.16);
-      border-color: rgba(250, 204, 21, 0.45);
-      color: #fef08a;
+      background: #facc151a;
+      border-color: #facc1544;
+      color: #fef9c3;
     }
 
     .pill-status.dup {
-      background: rgba(249, 115, 22, 0.16);
-      border-color: rgba(249, 115, 22, 0.45);
+      background: #f973161a;
+      border-color: #f9731644;
       color: #fed7aa;
+    }
+
+    .pill-status span {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
     }
 
     .toolbar {
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+      gap: 8px;
       align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
       font-size: 12px;
-      margin: 12px 0;
+    }
+
+    .toolbar button,
+    .toolbar select {
+      background: #020617;
+      color: #e5e7eb;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .toolbar button:hover {
+      border-color: #4b5563;
+    }
+
+    .toolbar input {
+      background: #020617;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: #e5e7eb;
+      font-size: 12px;
+      min-width: 170px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 13px;
     }
 
+    thead { background: #020617; }
+
     th, td {
-      padding: 8px 8px;
-      border-bottom: 1px solid var(--border);
+      padding: 7px 8px;
+      border-bottom: 1px solid #111827;
       text-align: left;
       white-space: nowrap;
     }
 
     th {
-      font-weight: 600;
+      font-weight: 500;
       font-size: 11px;
-      color: var(--muted);
+      color: #9ca3af;
       text-transform: uppercase;
-      letter-spacing: .08em;
+      letter-spacing: .06em;
     }
 
     .pill {
-      padding: 3px 10px;
+      padding: 2px 8px;
       border-radius: 999px;
-      border: 1px solid var(--border);
-      background: var(--panel-strong);
       font-size: 11px;
       display: inline-block;
     }
 
-    .pill-ok {
-      border-color: var(--accent-strong);
-      background: var(--accent-soft);
+    .pill-flex {
+      background: #22c55e33;
+      color: #bbf7d0;
+      border: 1px solid #22c55e55;
     }
 
-    .pill-invalid {
-      border-color: rgba(250, 204, 21, 0.5);
-      background: rgba(250, 204, 21, 0.12);
-      color: #fef3c7;
+    .pill-districad {
+      background: #3b82f633;
+      color: #bfdbfe;
+      border: 1px solid #3b82f655;
     }
+
+    .pill-estado-ok {
+      background: #22c55e1a;
+      color: #bbf7d0;
+      border: 1px solid #22c55e44;
+    }
+
+    .pill-estado-inv {
+      background: #facc151a;
+      color: #fef9c3;
+      border: 1px solid #facc1544;
+    }
+
+    .row-ok td {}
+    .row-invalid td { background: #451a03; }
+
+    .hint { font-size: 11px; color: #6b7280; margin-top: 4px; }
 
     .action-button {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 6px 10px;
-      font-size: 12px;
-      color: var(--text);
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      color: #bfdbfe;
       cursor: pointer;
+      transition: border-color .2s ease, color .2s ease;
     }
 
     .action-button:hover:enabled {
-      border-color: var(--accent);
+      border-color: #3b82f6aa;
+      color: #93c5fd;
     }
 
-    .hidden { display: none !important; }
+    .action-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
 
-    @media (max-width: 700px) {
-      header { flex-direction: column; align-items: flex-start; gap: 8px; }
-      .scan-row { flex-direction: column; align-items: stretch; }
-      .scan-row input { width: 100%; }
+    .actions-cell {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
     }
   </style>
 </head>
-<body class="courier-flex">
+<body>
 
 <header>
   <div>
-    <h1>Despacho Flex &amp; Colecta</h1>
-    <div class="subtitle">Flujo de despacho con inicio explícito</div>
+    <h1>Despacho Flex &amp; Districad</h1>
+    <div class="subtitle">Panel conectado a base de datos</div>
   </div>
   <div class="header-actions">
-    <div id="state-chip" class="tag">Sin sesión activa</div>
+    <div class="tag">En línea</div>
     <a class="link-button" href="historial.html">Historial de despachos &rarr;</a>
   </div>
 </header>
 
 <div class="container">
-  <div class="panels-grid">
-    <div id="start-panel" class="panel">
-      <div class="label">Estado A — Iniciar despacho</div>
-      <h2>Crear una nueva sesión</h2>
-      <form id="start-form">
-        <div class="input-group">
-          <label class="label" for="courier">Tipo de despacho</label>
-          <select id="courier" required>
-            <option value="FLEX">Flex</option>
-            <option value="COLECTA">Colecta</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label class="label" for="transportista">Empresa / Cadete</label>
-          <input id="transportista" type="text" placeholder="Ej: Empresa de Transporte" required />
-        </div>
-        <div class="input-group">
-          <label class="label" for="matricula">Matrícula</label>
-          <input id="matricula" type="text" placeholder="ABC1234" required />
-        </div>
-        <button type="submit" class="primary-btn">Iniciar despacho</button>
-      </form>
+
+  <!-- Métricas -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">Total paquetes</div>
+      <div class="card-value" id="metric-total">0</div>
+      <div class="card-sub">Registros en esta sesión</div>
     </div>
 
-    <div id="active-panel" class="panel hidden">
-      <div class="label">Estado B — Sesión activa</div>
-      <h2 id="session-title">Despacho activo</h2>
-      <p id="session-subtitle" style="margin-top:4px; color: var(--muted); font-size: 13px;"></p>
-      <div style="display:flex; gap:10px; flex-wrap:wrap; margin:12px 0;">
-        <div class="status-chip" id="session-chip">—</div>
-        <button id="btn-close" class="ghost-btn">Cerrar despacho</button>
-      </div>
-      <div style="font-size:12px; color:var(--muted); margin-top:8px;">
-        El escáner sólo aceptará códigos válidos para el tipo seleccionado.
-      </div>
+    <div class="card">
+      <div class="card-title">Flex</div>
+      <div class="card-value" id="metric-flex">0</div>
+      <div class="card-sub">Códigos OK</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Etiqueta Districad</div>
+      <div class="card-value" id="metric-districad">0</div>
+      <div class="card-sub">Códigos OK</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Inválidos</div>
+      <div class="card-value" id="metric-invalid">0</div>
+      <div class="card-sub">Para ajuste / revisión</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Último estado</div>
+      <div class="card-value" id="metric-last-status">–</div>
+      <div class="card-sub" id="metric-last-code">Esperando primer escaneo</div>
     </div>
   </div>
 
-  <div id="scan-panel" class="panel hidden" style="margin-top:14px;">
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-title">Total registrados</div>
-        <div class="metric-value" id="metric-total">0</div>
-        <div class="metric-sub">Incluye inválidos</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-title" id="metric-ok-title">Códigos OK</div>
-        <div class="metric-value" id="metric-ok">0</div>
-        <div class="metric-sub" id="metric-ok-sub">Formato correcto</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-title">Inválidos</div>
-        <div class="metric-value" id="metric-invalid">0</div>
-        <div class="metric-sub">Revisar formato</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-title">Último estado</div>
-        <div class="metric-value" id="metric-last-status">–</div>
-        <div class="metric-sub" id="metric-last-code">Esperando primer escaneo</div>
-      </div>
+  <!-- Scan -->
+  <div class="scan-box">
+    <div class="scan-label">Escanear código:</div>
+
+    <div class="scan-input">
+      <input id="scan-input" type="text" autocomplete="off"
+             placeholder="Apuntá el lector aquí y escaneá..." />
+      <div class="hint">Enter o fin de lectura = registrar código</div>
     </div>
 
-    <div class="scan-box">
-      <div class="scan-row">
-        <input id="scan-input" type="text" autocomplete="off" placeholder="Apuntá el lector aquí y escaneá..." />
-        <div id="scan-status-pill" class="pill-status">Listo</div>
-      </div>
-      <div style="font-size:12px; color:var(--muted);">Enter o fin de lectura = registrar código</div>
-    </div>
-
-    <div class="toolbar">
-      <span>Búsqueda:</span>
-      <input id="search-input" type="text" placeholder="Buscar por código..." style="max-width:220px;" />
-      <span id="tipo-badge" class="pill" style="border-color: var(--accent); color: var(--text);">—</span>
-    </div>
-
-    <div style="overflow-x:auto; max-height: 60vh;">
-      <table>
-        <thead>
-          <tr>
-            <th>Hora</th>
-            <th>Código</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="table-body"></tbody>
-      </table>
+    <div id="scan-status-pill" class="pill-status">
+      <span>Listo</span>
     </div>
   </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span>Mostrar:</span>
+    <select id="filter-tipo">
+      <option value="ALL">Todos los tipos</option>
+      <option value="Flex">Solo Flex</option>
+      <option value="Etiqueta Districad">Solo Etiqueta Districad</option>
+      <option value="Invalido">Solo inválidos</option>
+    </select>
+
+    <span> | Buscar:</span>
+    <input id="search-input" type="text" placeholder="Buscar por código..." />
+
+    <button id="btn-close">Cerrar despacho</button>
+  </div>
+
+  <!-- Tabla -->
+  <div style="overflow-x:auto; max-height: 60vh;">
+    <table>
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Código</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
 </div>
 
 <script>
-  const STORAGE_API_KEY = 'flex_districad_api_key';
+  // Claves para localStorage
+  const STORAGE_SCANS_KEY   = 'flex_districad_scans';
+  const STORAGE_METRICS_KEY = 'flex_districad_metrics';
+  const STORAGE_API_KEY     = 'flex_districad_api_key';
 
+  // Estado local (solo para mostrar en pantalla)
   const scans = [];
-  let sessionInfo = null;
-  let metrics = { total: 0, ok: 0, invalidos: 0 };
-  let lastScan = null;
+  let apiKey    = localStorage.getItem(STORAGE_API_KEY) || '';
   let csrfToken = '';
-  let apiKey = localStorage.getItem(STORAGE_API_KEY) || '';
 
-  const startPanel = document.getElementById('start-panel');
-  const activePanel = document.getElementById('active-panel');
-  const scanPanel = document.getElementById('scan-panel');
-  const scanInput = document.getElementById('scan-input');
-  const statusPill = document.getElementById('scan-status-pill');
-  const tbody = document.getElementById('table-body');
-  const searchInput = document.getElementById('search-input');
-  const metricTotal = document.getElementById('metric-total');
-  const metricOk = document.getElementById('metric-ok');
-  const metricInvalid = document.getElementById('metric-invalid');
-  const metricLastStatus = document.getElementById('metric-last-status');
-  const metricLastCode = document.getElementById('metric-last-code');
-  const metricOkTitle = document.getElementById('metric-ok-title');
-  const metricOkSub = document.getElementById('metric-ok-sub');
-  const tipoBadge = document.getElementById('tipo-badge');
-  const sessionTitle = document.getElementById('session-title');
-  const sessionSubtitle = document.getElementById('session-subtitle');
-  const sessionChip = document.getElementById('session-chip');
-  const stateChip = document.getElementById('state-chip');
+  const scanInput       = document.getElementById('scan-input');
+  const statusPill      = document.getElementById('scan-status-pill');
+  const tbody           = document.getElementById('table-body');
+  const filterTipo      = document.getElementById('filter-tipo');
+  const searchInput     = document.getElementById('search-input');
+  const btnClose        = document.getElementById('btn-close');
+
+  const metricTotal     = document.getElementById('metric-total');
+  const metricFlex      = document.getElementById('metric-flex');
+  const metricDistricad = document.getElementById('metric-districad');
+  const metricInvalid   = document.getElementById('metric-invalid');
+  const metricLastStatus= document.getElementById('metric-last-status');
+  const metricLastCode  = document.getElementById('metric-last-code');
 
   function clearStoredApiKey() {
     apiKey = '';
@@ -484,7 +430,9 @@
       apiKey = input.trim();
       if (!apiKey) {
         const retry = window.confirm('Se necesita un token API para continuar. ¿Intentar nuevamente?');
-        if (!retry) break;
+        if (!retry) {
+          break;
+        }
       }
     }
 
@@ -497,7 +445,10 @@
 
   async function apiFetch(url, options = {}, extra = {}) {
     await ensureApiKey();
-    if (!apiKey) throw new Error('No se ingresó un token API.');
+
+    if (!apiKey) {
+      throw new Error('No se ingresó un token API. Recargá la página e intentá nuevamente.');
+    }
 
     const opts = { credentials: 'same-origin', ...options };
     const headers = new Headers(opts.headers || {});
@@ -509,7 +460,9 @@
     headers.set('X-Api-Key', apiKey);
 
     if (extra.requireCsrf) {
-      if (!csrfToken) throw new Error('Token CSRF no inicializado. Recargá para sincronizar.');
+      if (!csrfToken) {
+        throw new Error('El token CSRF no está inicializado. Recargá el panel para sincronizar nuevamente.');
+      }
       headers.set('X-CSRF-Token', csrfToken);
     }
 
@@ -523,7 +476,7 @@
     }
 
     if (resp.status === 403 && extra.requireCsrf) {
-      throw new Error('Token CSRF inválido. Recargá la página.');
+      throw new Error('Token CSRF inválido. Recargá la página para obtener uno nuevo.');
     }
 
     return resp;
@@ -531,233 +484,378 @@
 
   async function parseJsonResponse(resp) {
     const text = await resp.text();
+
     if (!text || !text.trim()) {
-      throw new Error(`El servidor respondió ${resp.status} sin contenido.`);
+      throw new Error(`El servidor respondió ${resp.status} sin contenido. URL: ${resp.url || '(desconocida)'}`);
     }
+
     try {
       return JSON.parse(text);
     } catch (error) {
-      const snippet = text.slice(0, 200).replace(/\s+/g, ' ').trim();
-      throw new Error(`Respuesta no válida del servidor (HTTP ${resp.status}). ${snippet || ''}`);
+      const snippet = text.slice(0, 180).replace(/\s+/g, ' ').trim();
+      console.error('Respuesta no válida del servidor:', { status: resp.status, url: resp.url, cuerpo: text });
+      throw new Error(
+        `El servidor devolvió una respuesta no válida (HTTP ${resp.status}).` +
+        (snippet ? ` Detalle: ${snippet}` : '')
+      );
     }
   }
 
-  function setAccentFromCourier(courier) {
-    document.body.classList.remove('courier-flex', 'courier-colecta');
-    if (courier === 'COLECTA') {
-      document.body.classList.add('courier-colecta');
-    } else {
-      document.body.classList.add('courier-flex');
-    }
+  function metricasVacias() {
+    return { total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 };
   }
 
-  function formatScan(scan) {
-    const ts = scan.ts ? Number(scan.ts) : (scan.scanned_at ? new Date(scan.scanned_at).getTime() : Date.now());
-    return {
-      id: scan.id != null ? Number(scan.id) : null,
-      codigo: scan.codigo,
-      tipo: scan.tipo || (sessionInfo && sessionInfo.courier === 'COLECTA' ? 'Colecta' : 'Flex'),
-      estado: scan.estado || 'OK',
-      ts,
-    };
-  }
-
-  function setStatusPill(estado) {
+  function setStatusPill(estadoUi) {
     statusPill.className = 'pill-status';
-    if (estado === 'OK') {
+
+    if (estadoUi === 'OK') {
       statusPill.classList.add('ok');
-      statusPill.textContent = 'OK';
-    } else if (estado === 'CÓDIGO INVÁLIDO') {
+      statusPill.innerHTML = '<span>OK</span>';
+    } else if (estadoUi === 'CÓDIGO INVÁLIDO') {
       statusPill.classList.add('invalid');
-      statusPill.textContent = 'Inválido';
-    } else if (estado === 'DUPLICADO') {
+      statusPill.innerHTML = '<span>Inválido</span>';
+    } else if (estadoUi === 'DUPLICADO') {
       statusPill.classList.add('dup');
-      statusPill.textContent = 'Duplicado';
-    } else if (estado) {
-      statusPill.textContent = estado;
+      statusPill.innerHTML = '<span>Duplicado</span>';
     } else {
-      statusPill.textContent = 'Listo';
+      statusPill.innerHTML = '<span>Listo</span>';
     }
   }
 
-  function renderMetrics() {
-    metricTotal.textContent = metrics.total || 0;
-    metricOk.textContent = metrics.ok || 0;
-    metricInvalid.textContent = metrics.invalidos || 0;
-    if (sessionInfo) {
-      const tipoUi = sessionInfo.courier === 'COLECTA' ? 'Colecta' : 'Flex';
-      metricOkTitle.textContent = `${tipoUi} OK`;
-      metricOkSub.textContent = `Formato válido de ${tipoUi}`;
-      tipoBadge.textContent = `Despacho ${tipoUi}`;
-      tipoBadge.style.borderColor = 'var(--accent)';
-    } else {
-      metricOkTitle.textContent = 'Códigos OK';
-      metricOkSub.textContent = 'Formato correcto';
-      tipoBadge.textContent = 'Sin sesión';
-      tipoBadge.style.borderColor = 'var(--border)';
-    }
+  function obtenerTipoAlternativo(tipoActual) {
+    if (tipoActual === 'Flex') return 'Etiqueta Districad';
+    if (tipoActual === 'Etiqueta Districad') return 'Flex';
+    return 'Flex';
+  }
 
-    if (lastScan) {
-      metricLastStatus.textContent = lastScan.estado;
-      metricLastCode.textContent = lastScan.codigo;
-    } else {
+  function actualizarMetricasDesdeAPI(metrics) {
+    if (!metrics) return;
+    metricTotal.textContent     = metrics.total       ?? 0;
+    metricFlex.textContent      = metrics.flex_ok     ?? 0;
+    metricDistricad.textContent = metrics.etiqueta_ok ?? 0;
+    metricInvalid.textContent   = metrics.invalidos   ?? 0;
+  }
+
+  function actualizarMetricasUltimo() {
+    if (scans.length === 0) {
       metricLastStatus.textContent = '–';
-      metricLastCode.textContent = 'Esperando primer escaneo';
+      metricLastCode.textContent   = 'Esperando primer escaneo';
+    } else {
+      const last = scans[scans.length - 1];
+      metricLastStatus.textContent = last.estado;
+      metricLastCode.textContent   = last.codigo;
     }
   }
 
-  function renderTable() {
+  function actualizarTabla() {
+    const filtro = filterTipo.value;
     const search = searchInput.value.trim();
+
     tbody.innerHTML = '';
 
     const filtrados = scans.filter(s => {
+      if (filtro === 'Flex' && s.tipo !== 'Flex') return false;
+      if (filtro === 'Etiqueta Districad' && s.tipo !== 'Etiqueta Districad') return false;
+      if (filtro === 'Invalido' && s.estado !== 'CÓDIGO INVÁLIDO') return false;
       if (search && !s.codigo.includes(search)) return false;
       return true;
-    }).slice().reverse();
+    }).slice().reverse(); // últimos primero
 
     for (const registro of filtrados) {
       const tr = document.createElement('tr');
-      if (registro.estado === 'CÓDIGO INVÁLIDO') tr.style.background = 'rgba(250, 204, 21, 0.06)';
+      if (registro.estado === 'CÓDIGO INVÁLIDO') tr.classList.add('row-invalid');
 
       const hora = new Date(registro.ts).toLocaleTimeString('es-UY', { hour12: false });
 
-      const tdHora = document.createElement('td');
-      tdHora.textContent = hora;
-
+      const tdHora   = document.createElement('td');
       const tdCodigo = document.createElement('td');
+      const tdTipo   = document.createElement('td');
+      const tdEstado = document.createElement('td');
+      const tdAccion = document.createElement('td');
+
+      tdHora.textContent   = hora;
       tdCodigo.textContent = registro.codigo;
 
-      const tdEstado = document.createElement('td');
-      const estadoSpan = document.createElement('span');
-      estadoSpan.className = 'pill ' + (registro.estado === 'OK' ? 'pill-ok' : 'pill-invalid');
-      estadoSpan.textContent = registro.estado;
-      tdEstado.appendChild(estadoSpan);
+      // TIPO
+      const spanTipo = document.createElement('span');
+      spanTipo.classList.add('pill');
+      if (registro.estado === 'CÓDIGO INVÁLIDO') {
+        spanTipo.classList.add('pill-estado-inv');
+        spanTipo.textContent = 'Inválido';
+      } else {
+        spanTipo.classList.add(
+          registro.tipo === 'Flex' ? 'pill-flex' : 'pill-districad'
+        );
+        spanTipo.textContent = registro.tipo;
+      }
+      tdTipo.appendChild(spanTipo);
 
-      const tdAccion = document.createElement('td');
+      // ESTADO
+      const spanEstado = document.createElement('span');
+      spanEstado.classList.add('pill');
+      if (registro.estado === 'OK') {
+        spanEstado.classList.add('pill-estado-ok');
+      } else {
+        spanEstado.classList.add('pill-estado-inv');
+      }
+      spanEstado.textContent = registro.estado;
+      tdEstado.appendChild(spanEstado);
+
+      // ACCIÓN
       const btnEliminar = document.createElement('button');
       btnEliminar.type = 'button';
       btnEliminar.className = 'action-button';
       btnEliminar.textContent = 'Eliminar';
-      btnEliminar.disabled = !registro.id;
-      btnEliminar.addEventListener('click', () => {
-        if (!registro.id) return;
-        if (window.confirm(`¿Eliminar el código ${registro.codigo}?`)) {
-          eliminarLectura(registro.id);
-        }
-      });
+
+      const btnCambioTipo = document.createElement('button');
+      btnCambioTipo.type = 'button';
+      btnCambioTipo.className = 'action-button';
+      btnCambioTipo.textContent = 'Modificar Tipo';
+
+      const nuevoTipo = obtenerTipoAlternativo(registro.tipo);
+
+      if (!registro.id) {
+        btnEliminar.disabled = true;
+        btnEliminar.title = 'Esperando sincronización con el servidor';
+        btnCambioTipo.disabled = true;
+        btnCambioTipo.title = 'Esperando sincronización con el servidor';
+      } else {
+        btnEliminar.addEventListener('click', () => {
+          confirmarEliminarLectura(registro);
+        });
+        btnCambioTipo.addEventListener('click', () => {
+          confirmarCambioTipo(registro, nuevoTipo);
+        });
+      }
+
+      tdAccion.classList.add('actions-cell');
+      tdAccion.appendChild(btnCambioTipo);
       tdAccion.appendChild(btnEliminar);
 
       tr.appendChild(tdHora);
       tr.appendChild(tdCodigo);
+      tr.appendChild(tdTipo);
       tr.appendChild(tdEstado);
       tr.appendChild(tdAccion);
+
       tbody.appendChild(tr);
     }
   }
 
-  function togglePanels() {
-    if (sessionInfo) {
-      startPanel.classList.add('hidden');
-      activePanel.classList.remove('hidden');
-      scanPanel.classList.remove('hidden');
-      stateChip.textContent = 'Sesión activa';
-    } else {
-      startPanel.classList.remove('hidden');
-      activePanel.classList.add('hidden');
-      scanPanel.classList.add('hidden');
-      stateChip.textContent = 'Sin sesión activa';
+  function confirmarEliminarLectura(registro) {
+    if (!registro || !registro.id) return;
+    const descripcion = registro.codigo ? `el código ${registro.codigo}` : 'esta lectura';
+    const mensaje = `¿Eliminar ${descripcion}?\nEsta acción no se puede deshacer.`;
+    if (!window.confirm(mensaje)) return;
+    eliminarLectura(registro.id);
+  }
+
+  function confirmarCambioTipo(registro, nuevoTipo) {
+    if (!registro || !registro.id) return;
+    const descripcion = registro.codigo ? `el código ${registro.codigo}` : 'esta lectura';
+    const mensaje = `¿Cambiar el tipo de ${descripcion} a "${nuevoTipo}"?\nEsto ajustará las métricas de la sesión.`;
+    if (!window.confirm(mensaje)) return;
+    cambiarTipoLectura(registro, nuevoTipo);
+  }
+
+  async function eliminarLectura(scanId) {
+    if (!scanId) return;
+
+    try {
+      const resp = await apiFetch('api/delete_scan.php', {
+        method: 'POST',
+        body: JSON.stringify({ scan_id: scanId })
+      }, { requireCsrf: true });
+
+      const data = await resp.json();
+
+      if (!data.success) {
+        alert(data.message || 'No se pudo eliminar la lectura.');
+        return;
+      }
+
+      const index = scans.findIndex(s => Number(s.id) === Number(scanId));
+      if (index !== -1) {
+        scans.splice(index, 1);
+      }
+
+      actualizarMetricasDesdeAPI(data.metrics || metricasVacias());
+      actualizarMetricasUltimo();
+      actualizarTabla();
+
+      if (data.last_scan) {
+        metricLastStatus.textContent = data.last_scan.estado;
+        metricLastCode.textContent   = data.last_scan.codigo;
+        setStatusPill(data.last_scan.estado);
+      } else if (scans.length === 0) {
+        metricLastStatus.textContent = '–';
+        metricLastCode.textContent   = 'Esperando primer escaneo';
+        setStatusPill(null);
+      } else {
+        setStatusPill(scans[scans.length - 1].estado);
+      }
+
+      guardarSesionEnLocalStorage();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Error al eliminar la lectura.');
     }
   }
 
-  function renderSessionInfo() {
-    if (!sessionInfo) {
-      setAccentFromCourier(null);
-      sessionTitle.textContent = 'Despacho activo';
-      sessionSubtitle.textContent = '';
-      sessionChip.textContent = 'Sin sesión';
-      return;
+  async function cambiarTipoLectura(registro, nuevoTipo) {
+    if (!registro || !registro.id) return;
+
+    try {
+      const resp = await apiFetch('api/update_scan_type.php', {
+        method: 'POST',
+        body: JSON.stringify({
+          scan_id   : registro.id,
+          nuevo_tipo: nuevoTipo
+        })
+      }, { requireCsrf: true });
+
+      const data = await parseJsonResponse(resp);
+
+      if (!data.success) {
+        alert(data.message || 'No se pudo cambiar el tipo de la lectura.');
+        return;
+      }
+
+      const idx = scans.findIndex(s => Number(s.id) === Number(data.registro.id));
+      if (idx !== -1) {
+        scans[idx] = {
+          ...scans[idx],
+          codigo: data.registro.codigo,
+          tipo: data.registro.tipo,
+          estado: data.registro.estado,
+          ts: data.registro.ts || scans[idx].ts,
+        };
+      }
+
+      actualizarMetricasDesdeAPI(data.metrics || metricasVacias());
+      actualizarMetricasUltimo();
+      actualizarTabla();
+      guardarSesionEnLocalStorage();
+
+      if (data.last_scan) {
+        metricLastStatus.textContent = data.last_scan.estado;
+        metricLastCode.textContent   = data.last_scan.codigo;
+        setStatusPill(data.last_scan.estado);
+      } else if (scans.length === 0) {
+        setStatusPill(null);
+      } else {
+        setStatusPill(scans[scans.length - 1].estado);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Error al cambiar el tipo de la lectura.');
     }
-    setAccentFromCourier(sessionInfo.courier);
-    const tipoUi = sessionInfo.courier === 'COLECTA' ? 'Colecta' : 'Flex';
-    sessionTitle.textContent = `Despacho ${tipoUi} #${sessionInfo.numero_en_dia}`;
-    sessionSubtitle.textContent = `${sessionInfo.transportista} — ${sessionInfo.matricula}`;
-    sessionChip.textContent = `${tipoUi} • Iniciado ${sessionInfo.started_at || sessionInfo.fecha}`;
   }
 
-  async function sincronizarSesion() {
+  function guardarSesionEnLocalStorage() {
+    try {
+      localStorage.setItem(STORAGE_SCANS_KEY, JSON.stringify(scans));
+
+      const metrics = {
+        total       : Number(metricTotal.textContent)     || 0,
+        flex_ok     : Number(metricFlex.textContent)      || 0,
+        etiqueta_ok : Number(metricDistricad.textContent) || 0,
+        invalidos   : Number(metricInvalid.textContent)   || 0,
+      };
+      localStorage.setItem(STORAGE_METRICS_KEY, JSON.stringify(metrics));
+    } catch (e) {
+      console.error('Error guardando sesión en localStorage', e);
+    }
+  }
+
+  function cargarSesionDesdeLocalStorage() {
+    try {
+      const savedScans   = JSON.parse(localStorage.getItem(STORAGE_SCANS_KEY)   || '[]');
+      const savedMetrics = JSON.parse(localStorage.getItem(STORAGE_METRICS_KEY) || 'null');
+
+      if (Array.isArray(savedScans)) {
+        savedScans.forEach(s => scans.push(s));
+      }
+
+      if (savedMetrics) {
+        actualizarMetricasDesdeAPI(savedMetrics);
+      }
+
+      actualizarMetricasUltimo();
+      actualizarTabla();
+      if (scans.length === 0) {
+        setStatusPill(null);
+      } else {
+        setStatusPill(scans[scans.length - 1].estado);
+      }
+    } catch (e) {
+      console.error('Error cargando sesión desde localStorage', e);
+    }
+  }
+
+  async function sincronizarSesionConServidor() {
     try {
       const resp = await apiFetch('api/current_session.php');
       const data = await parseJsonResponse(resp);
 
-      if (!data.success) throw new Error(data.message || 'No se pudo sincronizar.');
-      if (data.csrf_token) csrfToken = data.csrf_token;
-
-      sessionInfo = data.session;
-      metrics = data.metrics || { total: 0, ok: 0, invalidos: 0 };
-      scans.length = 0;
-      lastScan = data.last_scan ? formatScan(data.last_scan) : null;
-
-      if (Array.isArray(data.scans)) {
-        data.scans.forEach(s => scans.push(formatScan(s)));
+      if (!data.success) {
+        throw new Error(data.message || 'No se pudo sincronizar con el servidor.');
       }
 
-      renderSessionInfo();
-      renderMetrics();
-      renderTable();
-      togglePanels();
+      if (data.csrf_token) {
+        csrfToken = data.csrf_token;
+      }
 
-      if (sessionInfo) scanInput.focus();
-    } catch (err) {
-      console.error(err);
-      alert(err.message || 'Error al sincronizar con el backend.');
-    }
-  }
+      if (!data.session) {
+        scans.length = 0;
+        actualizarMetricasDesdeAPI(metricasVacias());
+        actualizarMetricasUltimo();
+        actualizarTabla();
+        setStatusPill(null);
+        guardarSesionEnLocalStorage();
+        return;
+      }
 
-  async function crearSesion(e) {
-    e.preventDefault();
-    const courier = document.getElementById('courier').value;
-    const transportista = document.getElementById('transportista').value.trim();
-    const matricula = document.getElementById('matricula').value.trim();
-
-    if (!courier || !transportista || !matricula) {
-      alert('Completá todos los campos para iniciar el despacho.');
-      return;
-    }
-
-    try {
-      const resp = await apiFetch('api/create_session.php', {
-        method: 'POST',
-        body: JSON.stringify({ courier, transportista, matricula })
-      }, { requireCsrf: true });
-
-      const data = await parseJsonResponse(resp);
-      if (!data.success) throw new Error(data.message || 'No se pudo crear la sesión.');
-
-      if (data.csrf_token) csrfToken = data.csrf_token;
-      sessionInfo = data.session;
-      metrics = { total: 0, ok: 0, invalidos: 0 };
       scans.length = 0;
-      lastScan = null;
+      if (Array.isArray(data.scans)) {
+        data.scans.forEach((scan) => {
+          scans.push({
+            id: scan.id != null ? Number(scan.id) : null,
+            codigo: scan.codigo,
+            tipo: scan.tipo,
+            estado: scan.estado,
+            ts: scan.ts || (scan.scanned_at ? new Date(scan.scanned_at).getTime() : Date.now()),
+          });
+        });
+      }
 
-      renderSessionInfo();
-      renderMetrics();
-      renderTable();
-      togglePanels();
-      scanInput.focus();
-      setStatusPill(null);
+      actualizarMetricasDesdeAPI(data.metrics || metricasVacias());
+      actualizarMetricasUltimo();
+      actualizarTabla();
+
+      if (data.last_scan) {
+        metricLastStatus.textContent = data.last_scan.estado;
+        metricLastCode.textContent   = data.last_scan.codigo;
+        setStatusPill(data.last_scan.estado);
+      } else if (scans.length === 0) {
+        setStatusPill(null);
+      } else {
+        setStatusPill(scans[scans.length - 1].estado);
+      }
+
+      guardarSesionEnLocalStorage();
     } catch (err) {
-      console.error(err);
-      alert(err.message || 'Error al iniciar el despacho.');
+      console.error('Error al sincronizar con el backend', err);
+      if (!csrfToken) {
+        alert(err.message || 'No se pudo sincronizar con el backend. Verificá el token API.');
+      }
     }
   }
+
+  // ---- MANEJO DE ESCANEO (todo via backend, también duplicados) ----
 
   async function manejarScan(rawValue) {
-    if (!sessionInfo) {
-      alert('Iniciá un despacho antes de escanear.');
-      return;
-    }
-
-    const raw = String(rawValue || '').trim();
+    const raw = String(rawValue).trim();
     if (!raw) return;
 
     try {
@@ -770,106 +868,45 @@
 
       if (!data.success) {
         setStatusPill('ERROR');
-        alert(data.message || 'Error procesando el código.');
+        alert(data.message || 'Error procesando el código');
         return;
       }
 
-      if (data.csrf_token) csrfToken = data.csrf_token;
+      const reg     = data.registro; // {codigo, tipo, estado, scanned_at,...}
+      const metrics = data.metrics;
 
-      metrics = data.metrics || metrics;
-      const reg = data.registro;
-
+      // Actualizar pill según backend
       setStatusPill(reg.estado);
 
+      // DUPLICADO: no lo agregamos a la tabla, pero sí mostramos en el cuadro de último estado
       if (reg.estado === 'DUPLICADO') {
-        lastScan = formatScan({ ...reg, ts: reg.scanned_at });
+        metricLastStatus.textContent = 'DUPLICADO';
+        metricLastCode.textContent   = reg.codigo;
       } else {
-        const scan = formatScan({ ...reg, ts: reg.scanned_at });
-        scans.push(scan);
-        lastScan = scan;
+        // Nuevo registro (OK o CÓDIGO INVÁLIDO)
+        scans.push({
+          id     : reg.id != null ? Number(reg.id) : null,
+          codigo : reg.codigo,
+          tipo   : reg.tipo,          // Flex / Etiqueta Districad / Inválido
+          estado : reg.estado,        // OK / CÓDIGO INVÁLIDO
+          ts     : new Date(reg.scanned_at).getTime()
+        });
+        actualizarMetricasUltimo();
       }
 
-      renderMetrics();
-      renderTable();
+      actualizarMetricasDesdeAPI(metrics);
+      actualizarTabla();
+      guardarSesionEnLocalStorage();
+
     } catch (err) {
       console.error(err);
       setStatusPill('ERROR');
-      alert(err.message || 'Error de red o del servidor.');
+      alert(err.message || 'Error de red o del servidor');
     }
   }
 
-  async function eliminarLectura(scanId) {
-    if (!scanId) return;
-    try {
-      const resp = await apiFetch('api/delete_scan.php', {
-        method: 'POST',
-        body: JSON.stringify({ scan_id: scanId })
-      }, { requireCsrf: true });
+  // ---- Eventos ----
 
-      const data = await parseJsonResponse(resp);
-      if (!data.success) {
-        alert(data.message || 'No se pudo eliminar la lectura.');
-        return;
-      }
-
-      const idx = scans.findIndex(s => Number(s.id) === Number(scanId));
-      if (idx !== -1) scans.splice(idx, 1);
-
-      metrics = data.metrics || metrics;
-      lastScan = data.last_scan ? formatScan(data.last_scan) : null;
-
-      renderMetrics();
-      renderTable();
-    } catch (err) {
-      console.error(err);
-      alert(err.message || 'Error al eliminar la lectura.');
-    }
-  }
-
-  async function cerrarSesion() {
-    if (!sessionInfo) return;
-    if (!confirm('¿Confirmar cierre del despacho actual?')) return;
-
-    try {
-      const resp = await apiFetch('api/close_session.php', {
-        method: 'POST'
-      }, { requireCsrf: true });
-
-      const data = await parseJsonResponse(resp);
-      if (!data.success) {
-        alert(data.message || 'Error al cerrar el despacho.');
-        return;
-      }
-
-      const m = data.metrics || {};
-      alert(
-        `Despacho cerrado.\n\n` +
-        `Tipo: ${(sessionInfo.courier === 'COLECTA') ? 'Colecta' : 'Flex'}\n` +
-        `Empresa: ${sessionInfo.transportista}\n` +
-        `Matrícula: ${sessionInfo.matricula}\n` +
-        `Despacho #: ${m.numero_en_dia || sessionInfo.numero_en_dia}\n` +
-        `Paquetes: ${m.total || 0}\n` +
-        `OK: ${m.ok || 0} | Inválidos: ${m.invalidos || 0}`
-      );
-
-      sessionInfo = null;
-      metrics = { total: 0, ok: 0, invalidos: 0 };
-      scans.length = 0;
-      lastScan = null;
-      setStatusPill(null);
-      renderSessionInfo();
-      renderMetrics();
-      renderTable();
-      togglePanels();
-    } catch (err) {
-      console.error(err);
-      alert(err.message || 'Error de red al cerrar el despacho.');
-    }
-  }
-
-  document.getElementById('start-form').addEventListener('submit', crearSesion);
-  document.getElementById('btn-close').addEventListener('click', cerrarSesion);
-  searchInput.addEventListener('input', renderTable);
   scanInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       manejarScan(scanInput.value);
@@ -877,9 +914,54 @@
     }
   });
 
+  filterTipo.addEventListener('change', actualizarTabla);
+  searchInput.addEventListener('input', actualizarTabla);
+
+  // Cerrar despacho (marca la sesión como cerrada y envía mail)
+  btnClose.addEventListener('click', async () => {
+    if (!confirm('¿Confirmar cierre del despacho actual?')) return;
+
+    try {
+      const resp = await apiFetch('api/close_session.php', {
+        method: 'POST'
+      }, { requireCsrf: true });
+      const data = await parseJsonResponse(resp);
+
+      if (!data.success) {
+        alert(data.message || 'Error al cerrar el despacho');
+        return;
+      }
+
+      // Limpiar sesión local
+      scans.length = 0;
+      actualizarMetricasDesdeAPI({ total: 0, flex_ok: 0, etiqueta_ok: 0, invalidos: 0 });
+      actualizarMetricasUltimo();
+      actualizarTabla();
+      setStatusPill(null);
+      localStorage.removeItem(STORAGE_SCANS_KEY);
+      localStorage.removeItem(STORAGE_METRICS_KEY);
+
+      const m = data.metrics || {};
+      const fechaResumen  = m.fecha || '';
+      const numeroResumen = m.numero_en_dia || data.numero_en_dia || '';
+      alert(
+        `Despacho cerrado.\n\n` +
+        `Fecha: ${fechaResumen}\n` +
+        `Despacho #: ${numeroResumen}\n` +
+        `Paquetes: ${m.total || 0}\n` +
+        `Flex OK: ${m.flex_ok || 0} | Etiqueta OK: ${m.etiqueta_ok || 0} | Inválidos: ${m.invalidos || 0}`
+      );
+      await sincronizarSesionConServidor();
+    } catch (e) {
+      console.error(e);
+      alert(e.message || 'Error de red al cerrar el despacho');
+    }
+  });
+
   window.addEventListener('load', () => {
-    sincronizarSesion().finally(() => {
-      if (sessionInfo) scanInput.focus();
+    cargarSesionDesdeLocalStorage();
+    sincronizarSesionConServidor().finally(() => {
+      scanInput.focus();
     });
   });
 </script>

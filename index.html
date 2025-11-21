@@ -168,6 +168,16 @@
       font-size: 13px;
     }
 
+    .danger-btn {
+      border-color: #ef4444cc;
+      color: #fecaca;
+    }
+
+    .danger-btn:hover {
+      border-color: #ef4444;
+      color: #ffe4e6;
+    }
+
     .status-chip {
       display: inline-flex;
       align-items: center;
@@ -380,6 +390,7 @@
       <div style="display:flex; gap:10px; flex-wrap:wrap; margin:12px 0;">
         <div class="status-chip" id="session-chip">—</div>
         <button id="btn-close" class="ghost-btn">Cerrar despacho</button>
+        <button id="btn-cancel" class="ghost-btn danger-btn">Cancelar despacho</button>
       </div>
       <div style="font-size:12px; color:var(--muted); margin-top:8px;">
         El escáner sólo aceptará códigos válidos para el tipo seleccionado.
@@ -867,8 +878,41 @@
     }
   }
 
+  async function cancelarSesion() {
+    if (!sessionInfo) return;
+    if (!confirm('¿Cancelar y eliminar el despacho actual? Se borrarán todos los datos pendientes.')) return;
+
+    try {
+      const resp = await apiFetch('api/cancel_session.php', {
+        method: 'POST'
+      }, { requireCsrf: true });
+
+      const data = await parseJsonResponse(resp);
+      if (!data.success) {
+        alert(data.message || 'No se pudo cancelar el despacho.');
+        return;
+      }
+
+      alert('Despacho cancelado y eliminado.');
+
+      sessionInfo = null;
+      metrics = { total: 0, ok: 0, invalidos: 0 };
+      scans.length = 0;
+      lastScan = null;
+      setStatusPill(null);
+      renderSessionInfo();
+      renderMetrics();
+      renderTable();
+      togglePanels();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Error al cancelar el despacho.');
+    }
+  }
+
   document.getElementById('start-form').addEventListener('submit', crearSesion);
   document.getElementById('btn-close').addEventListener('click', cerrarSesion);
+  document.getElementById('btn-cancel').addEventListener('click', cancelarSesion);
   searchInput.addEventListener('input', renderTable);
   scanInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {

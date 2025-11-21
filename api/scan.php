@@ -9,6 +9,17 @@ require_csrf_token();
 date_default_timezone_set('America/Montevideo');
 $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE;
 
+function limpiar_utf8(string $valor): string
+{
+    $limpio = iconv('UTF-8', 'UTF-8//IGNORE', $valor);
+    if ($limpio === false) {
+        $limpio = '';
+    }
+    // Remueve caracteres invisibles comunes en escáneres
+    $limpio = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $limpio);
+    return $limpio;
+}
+
 /**
  * Detecta códigos de Colecta.
  * Reglas:
@@ -151,9 +162,11 @@ try {
         exit;
     }
 
-    $raw = isset($input['raw']) && is_string($input['raw'])
-        ? trim($input['raw'])
+    $rawOriginal = isset($input['raw']) && is_string($input['raw'])
+        ? $input['raw']
         : '';
+    $raw = limpiar_utf8($rawOriginal);
+    $raw = trim($raw);
 
     if ($raw === '') {
         echo json_encode([

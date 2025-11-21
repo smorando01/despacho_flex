@@ -2,8 +2,8 @@
 // api/create_session.php
 header('Content-Type: application/json');
 
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
-require __DIR__ . '/config.php';
 require_api_auth();
 require_csrf_token();
 date_default_timezone_set('America/Montevideo');

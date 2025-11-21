@@ -2,22 +2,24 @@
 // api/scan.php
 header('Content-Type: application/json');
 
-require __DIR__ . '/config.php';
+require_once __DIR__ . '/config.php'; // Primero config
 require_once __DIR__ . '/auth.php';
 require_api_auth();
 require_csrf_token();
 date_default_timezone_set('America/Montevideo');
 
-// Devuelve ID de Colecta si cumple patrón (11 dígitos o QR id[Ñ[...])
+// Devuelve ID de Colecta si cumple patrón (11 dígitos o QR id[Ñ[...), tolerando prefijos/basura
 function colecta_id(string $raw): ?string
 {
     $raw = trim($raw);
 
-    if (preg_match('/^\d{11}$/', $raw) === 1) {
-        return $raw;
+    // Primer bloque de 11 dígitos que aparezca
+    if (preg_match('/\d{11}/', $raw, $m) === 1) {
+        return $m[0];
     }
 
-    if (preg_match('/^id\[[ñÑ]\[(\d{6,20})/u', $raw, $m)) {
+    // Buscar patrón id[Ñ[ en cualquier posición
+    if (preg_match('/id\[[ñÑ]\[(\d{6,20})/u', $raw, $m)) {
         $id = $m[1];
         if (strlen($id) === 11 && ctype_digit($id)) {
             return $id;
@@ -25,6 +27,15 @@ function colecta_id(string $raw): ?string
     }
 
     return null;
+}
+
+// Detecta si el texto parece un código de Colecta (para dar error cruzado en FLEX)
+function parece_colecta(string $raw): bool
+{
+    if (preg_match('/\d{11}/', $raw) === 1) {
+        return true;
+    }
+    return preg_match('/id\[[ñÑ]\[/u', $raw) === 1;
 }
 
 // Analiza Flex: QR/ID largo distinto de 11 dígitos
@@ -149,7 +160,7 @@ try {
             $estado_db    = 'INVALIDO';
         }
     } elseif ($courier === 'FLEX') {
-        if ($colectaId !== null) {
+        if ($colectaId !== null || parece_colecta($raw)) {
             $pdo->rollBack();
             http_response_code(400);
             echo json_encode([

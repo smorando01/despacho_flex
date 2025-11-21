@@ -10,11 +10,15 @@ date_default_timezone_set('America/Montevideo');
 
 /**
  * Detecta códigos de Colecta.
- * Regla: exactamente 11 dígitos o cualquier QR que contenga id[Ñ[...]
+ * Reglas:
+ * - 11 dígitos (tolerando basura/unicode alrededor)
+ * - QR con id[Ñ[.....
+ * - Formato S##########MLU (agrupador de Colecta)
  */
 function detectar_colecta(string $raw): array
 {
-    $raw = trim($raw);
+    $rawTrim    = trim($raw);
+    $digitsOnly = preg_replace('/\D+/', '', $rawTrim);
 
     $resultado = [
         'es_colecta'   => false,
@@ -22,29 +26,41 @@ function detectar_colecta(string $raw): array
         'contiene_id'  => false,
     ];
 
-    if ($raw === '') {
+    if ($rawTrim === '') {
         return $resultado;
     }
 
-    if (preg_match('/^\d{11}$/', $raw) === 1) {
-        $resultado['es_colecta'] = true;
-        $resultado['codigo']     = $raw;
-        return $resultado;
-    }
-
-    $tieneId = preg_match('/id\[[ñÑ]\[/u', $raw) === 1;
+    // id[Ñ[ dentro del QR
+    $tieneId = preg_match('/id\[[ñÑ]\[/u', $rawTrim) === 1;
     $resultado['contiene_id'] = $tieneId;
-
-    if ($tieneId) {
-        $codigo = null;
-        if (preg_match('/id\[[ñÑ]\[(\d{11})/u', $raw, $m) === 1) {
-            $codigo = $m[1];
-        } elseif (preg_match('/\d{11}/', $raw, $m) === 1) {
-            $codigo = $m[0];
+    if ($tieneId && preg_match('/id\[[ñÑ]\[(\d{6,20})/u', $rawTrim, $m)) {
+        $id = $m[1];
+        if (ctype_digit($id) && strlen($id) >= 11) {
+            $resultado['es_colecta'] = true;
+            $resultado['codigo']     = substr($id, 0, 11);
+            return $resultado;
         }
+    }
 
+    // 11 dígitos exactos (permitiendo caracteres invisibles)
+    if (strlen($digitsOnly) === 11) {
         $resultado['es_colecta'] = true;
-        $resultado['codigo']     = $codigo ?? $raw;
+        $resultado['codigo']     = $digitsOnly;
+        return $resultado;
+    }
+
+    // Formato S##########MLU (agrupador Colecta)
+    if (preg_match('/S(\d{10,12})MLU/i', $rawTrim, $m) === 1) {
+        $resultado['es_colecta'] = true;
+        $resultado['codigo']     = $m[1];
+        return $resultado;
+    }
+
+    // Bloque de 11 dígitos delimitado (no confundir con 12+ continuos)
+    if (preg_match('/(?<!\d)(\d{11})(?!\d)/', $rawTrim, $m) === 1) {
+        $resultado['es_colecta'] = true;
+        $resultado['codigo']     = $m[1];
+        return $resultado;
     }
 
     return $resultado;
@@ -53,16 +69,16 @@ function detectar_colecta(string $raw): array
 // Intenta extraer IDs de Flex desde un QR con múltiples formatos
 function extraer_id_flex_qr(string $raw): ?string
 {
-    if (preg_match('/\[id\[[ñÑ]\[(\d{8,20})/i', $raw, $m)) {
+    if (preg_match('/\[id\[[ñÑ]\[(\d{6,20})/i', $raw, $m)) {
         return $m[1];
     }
 
-    if (preg_match('/id[¨\[]+[ñÑ][¨\[]+(\d{8,20})/i', $raw, $m)) {
+    if (preg_match('/id[¨\[]+[ñÑ][¨\[]+(\d{6,20})/i', $raw, $m)) {
         return $m[1];
     }
 
     $normalizado = strtolower(preg_replace('/[^a-z0-9]/i', ',', $raw));
-    if (preg_match('/id,+(\d{8,20})/', $normalizado, $m)) {
+    if (preg_match('/id,+(\d{6,20})/', $normalizado, $m)) {
         return $m[1];
     }
 
@@ -182,7 +198,11 @@ try {
     $esDistricad     = es_districad($raw);
 
     if ($courier === 'COLECTA') {
-        if ($flexAnalisis['parece_flex'] || $esDistricad) {
+        if ($colectaAnalisis['es_colecta']) {
+            $codigo_final = $colectaAnalisis['codigo'] ?? $raw;
+            $estado_db    = 'OK';
+            $tipo_db      = 'COLECTA';
+        } elseif ($flexAnalisis['parece_flex'] || $esDistricad) {
             $pdo->rollBack();
             http_response_code(400);
             echo json_encode([
@@ -190,12 +210,6 @@ try {
                 'message' => 'Sesión exclusiva de Colecta'
             ]);
             exit;
-        }
-
-        if ($colectaAnalisis['es_colecta']) {
-            $codigo_final = $colectaAnalisis['codigo'] ?? $raw;
-            $estado_db    = 'OK';
-            $tipo_db      = 'COLECTA';
         }
     } elseif ($courier === 'FLEX') {
         if ($colectaAnalisis['es_colecta']) {

@@ -7,6 +7,7 @@ require_once __DIR__ . '/auth.php';
 require_api_auth();
 require_csrf_token();
 date_default_timezone_set('America/Montevideo');
+$jsonFlags = JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE;
 
 /**
  * Detecta códigos de Colecta.
@@ -146,7 +147,7 @@ try {
         echo json_encode([
             'success' => false,
             'message' => 'JSON inválido'
-        ]);
+        ], $jsonFlags);
         exit;
     }
 
@@ -158,7 +159,7 @@ try {
         echo json_encode([
             'success' => false,
             'message' => 'Sin datos de código'
-        ]);
+        ], $jsonFlags);
         exit;
     }
 
@@ -181,7 +182,7 @@ try {
         echo json_encode([
             'success' => false,
             'message' => 'No hay despacho iniciado'
-        ]);
+        ], $jsonFlags);
         exit;
     }
 
@@ -208,7 +209,7 @@ try {
             echo json_encode([
                 'success' => false,
                 'message' => 'Sesión exclusiva de Colecta'
-            ]);
+            ], $jsonFlags);
             exit;
         }
     } elseif ($courier === 'FLEX') {
@@ -218,7 +219,7 @@ try {
             echo json_encode([
                 'success' => false,
                 'message' => 'Paquete de Colecta en sesión Flex'
-            ]);
+            ], $jsonFlags);
             exit;
         }
 
@@ -241,7 +242,7 @@ try {
         echo json_encode([
             'success' => false,
             'message' => 'Courier no soportado'
-        ]);
+        ], $jsonFlags);
         exit;
     }
 
@@ -337,7 +338,7 @@ try {
             'ok'        => (int)$metrics['ok'],
             'invalidos' => (int)$metrics['invalidos'],
         ]
-    ]);
+    ], $jsonFlags);
 
 } catch (Throwable $e) {
     if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
@@ -349,5 +350,5 @@ try {
         'success' => false,
         'message' => 'Error en servidor',
         'error'   => $e->getMessage()
-    ]);
+    ], $jsonFlags);
 }

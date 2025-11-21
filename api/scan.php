@@ -104,7 +104,7 @@ function analizar_flex(string $raw): array
         $resultado['modo']        = 'QR';
 
         $idExtraido = extraer_id_flex_qr($raw);
-        if ($idExtraido !== null && preg_match('/^\d{8,}$/', $idExtraido) === 1 && strlen($idExtraido) !== 11) {
+        if ($idExtraido !== null && preg_match('/^\d{8,}$/', $idExtraido) === 1) {
             $resultado['valido'] = true;
             $resultado['codigo'] = $idExtraido;
         } else {
